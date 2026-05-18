@@ -43,8 +43,12 @@ export type Database = {
           id: string
           is_driver: boolean | null
           last_check_in: string | null
+          latitude: number | null
+          location_updated_at: string | null
           login_code: string | null
           login_password: string | null
+          login_pin: string | null
+          longitude: number | null
           manager: string | null
           marital_status: string | null
           name: string
@@ -112,8 +116,12 @@ export type Database = {
           id?: string
           is_driver?: boolean | null
           last_check_in?: string | null
+          latitude?: number | null
+          location_updated_at?: string | null
           login_code?: string | null
           login_password?: string | null
+          login_pin?: string | null
+          longitude?: number | null
           manager?: string | null
           marital_status?: string | null
           name: string
@@ -181,8 +189,12 @@ export type Database = {
           id?: string
           is_driver?: boolean | null
           last_check_in?: string | null
+          latitude?: number | null
+          location_updated_at?: string | null
           login_code?: string | null
           login_password?: string | null
+          login_pin?: string | null
+          longitude?: number | null
           manager?: string | null
           marital_status?: string | null
           name?: string
@@ -354,6 +366,7 @@ export type Database = {
           preference: string | null
           preferred_hours: string | null
           preferred_language: string | null
+          qr_code_value: string | null
           reference_no: string | null
           religion: string | null
           requested_hours: Json | null
@@ -434,6 +447,7 @@ export type Database = {
           preference?: string | null
           preferred_hours?: string | null
           preferred_language?: string | null
+          qr_code_value?: string | null
           reference_no?: string | null
           religion?: string | null
           requested_hours?: Json | null
@@ -514,6 +528,7 @@ export type Database = {
           preference?: string | null
           preferred_hours?: string | null
           preferred_language?: string | null
+          qr_code_value?: string | null
           reference_no?: string | null
           religion?: string | null
           requested_hours?: Json | null
