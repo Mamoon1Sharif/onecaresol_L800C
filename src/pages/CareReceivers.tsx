@@ -45,14 +45,14 @@ const CareReceivers = () => {
         <div className="flex items-center gap-3">
           <div className="relative max-w-sm flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by name..." 
-              value={searchQuery} 
+            <Input
+              placeholder="Search by name..."
+              value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
-              }} 
-              className="pl-9 bg-card border-border" 
+              }}
+              className="pl-9 bg-card border-border"
             />
           </div>
           <Badge variant="outline" className="text-sm px-3 py-1.5">
@@ -68,48 +68,48 @@ const CareReceivers = () => {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {paginatedData.map((cr) => (
-              <div
-                key={cr.id}
-                onClick={() => navigate(`/carereceivers/${cr.id}`)}
-                className="group border border-border rounded-xl bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm truncate">{cr.name}</h3>
-                    {cr.dnacpr && (
-                      <Badge variant="destructive" className="shrink-0 text-[10px] px-1.5 py-0 gap-0.5">
-                        <Heart className="h-2.5 w-2.5" /> DNACPR
-                      </Badge>
-                    )}
+                <div
+                  key={cr.id}
+                  onClick={() => navigate(`/carereceivers/${cr.id}`)}
+                  className="group border border-border rounded-xl bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <h3 className="font-semibold text-foreground text-sm truncate">{cr.name}</h3>
+                      {cr.dnacpr && (
+                        <Badge variant="destructive" className="shrink-0 text-[10px] px-1.5 py-0 gap-0.5">
+                          <Heart className="h-2.5 w-2.5" /> DNACPR
+                        </Badge>
+                      )}
+                    </div>
+                    <Badge
+                      variant="default"
+                      className={`shrink-0 text-[10px] px-2 py-0.5 ${statusStyles[cr.account_status ?? cr.care_status ?? "Active"] ?? ""}`}
+                    >
+                      {cr.account_status ?? cr.care_status ?? "Active"}
+                    </Badge>
                   </div>
-                  <Badge
-                    variant="default"
-                    className={`shrink-0 text-[10px] px-2 py-0.5 ${statusStyles[cr.account_status ?? cr.care_status ?? "Active"] ?? ""}`}
-                  >
-                    {cr.account_status ?? cr.care_status ?? "Active"}
-                  </Badge>
+                  <div className="flex items-start gap-3">
+                    <div className="h-16 w-16 rounded-full border-2 border-border overflow-hidden shrink-0">
+                      <img src={getCareReceiverAvatar(cr.id, cr.avatar_url)} alt={cr.name} className="h-full w-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="min-w-0 space-y-1.5 text-sm">
+                      {cr.address && (
+                        <p className="text-muted-foreground text-xs leading-tight line-clamp-2 flex items-start gap-1.5">
+                          <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
+                          {cr.address}
+                        </p>
+                      )}
+                      {cr.next_of_kin_phone && (
+                        <p className="flex items-center gap-1.5 text-foreground">
+                          <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="text-xs">{cr.next_of_kin_phone}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="h-16 w-16 rounded-full border-2 border-border overflow-hidden shrink-0">
-                    <img src={getCareReceiverAvatar(cr.id, cr.avatar_url)} alt={cr.name} className="h-full w-full object-cover" loading="lazy" />
-                  </div>
-                  <div className="min-w-0 space-y-1.5 text-sm">
-                    {cr.address && (
-                      <p className="text-muted-foreground text-xs leading-tight line-clamp-2 flex items-start gap-1.5">
-                        <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
-                        {cr.address}
-                      </p>
-                    )}
-                    {cr.next_of_kin_phone && (
-                      <p className="flex items-center gap-1.5 text-foreground">
-                        <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-xs">{cr.next_of_kin_phone}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
             </div>
 
             {totalPages > 1 && (
