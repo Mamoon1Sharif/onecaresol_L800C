@@ -171,7 +171,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
         { id: "n5", ref: "142897531", tags: [], author, text: `${visit.serviceUser}'s leg bag emptied (500ml). Consent gained.`, hidden: false, createdAt: `${dateStr} 20:33`, visibleOnDevice: true },
       );
     }
-    
+
     setNotes(merged);
   }, [visit, dbShiftNotes, dbPrivateNotes, dbVisitNotes]);
 
@@ -541,13 +541,16 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                 )}
               </section>
 
+
+
+
               {/* ============== LIVE ROTA NOTES ============== */}
               <section>
                 <div className="flex items-center justify-between border-b pb-1 mb-2">
                   <h3 className="text-sm font-semibold text-primary">Live Rota Notes</h3>
-                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setNoteOpen(true)}>
+                  {/* <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setNoteOpen(true)}>
                     <Plus className="h-3.5 w-3.5" /> Add New
-                  </Button>
+                  </Button> */}
                 </div>
                 <p className="text-[11px] text-muted-foreground mb-2">
                   Notes marked as hidden will only appear on a single rota, service member and care giver note area or some of the reports. Notes marked as hidden will also not appear on the Care Portal section.
@@ -572,32 +575,32 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                         </thead>
                         <tbody>
                           {notes.map((n, i) => {
-                          const isPrivate = n.tags?.includes("Private");
-                          return (
-                            <tr key={n.id} className={`border-b border-border ${isPrivate ? "bg-amber-50/50 dark:bg-amber-950/20" : (i % 2 === 0 ? "bg-background" : "bg-muted/20")}`}>
-                              <td className="p-1.5 border-r border-border text-center"><input type="checkbox" /></td>
-                              <td className="p-1.5 border-r border-border">
-                                <Button size="icon" variant="ghost" className="h-6 w-6">
-                                  <Pencil className="h-3 w-3 text-orange-500" />
-                                </Button>
-                              </td>
-                              <td className="p-1.5 border-r border-border font-mono text-[11px] text-muted-foreground">{n.ref}</td>
-                              <td className="p-1.5 border-r border-border">
-                                {isPrivate ? (
-                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400">
-                                    Private
-                                  </span>
-                                ) : (
-                                  (n.tags || []).join(", ")
-                                )}
-                              </td>
-                              <td className="p-1.5 border-r border-border whitespace-nowrap text-[11px]">{n.createdAt}</td>
-                              <td className="p-1.5 border-r border-border text-[11px] font-medium">{n.text}</td>
-                              <td className="p-1.5 border-r border-border text-[11px]">{n.author}</td>
-                              <td className="p-1.5 text-[11px]">{n.visibleOnDevice === false ? "No" : "Yes"}</td>
-                            </tr>
-                          );
-                        })}
+                            const isPrivate = n.tags?.includes("Private");
+                            return (
+                              <tr key={n.id} className={`border-b border-border ${isPrivate ? "bg-amber-50/50 dark:bg-amber-950/20" : (i % 2 === 0 ? "bg-background" : "bg-muted/20")}`}>
+                                <td className="p-1.5 border-r border-border text-center"><input type="checkbox" /></td>
+                                <td className="p-1.5 border-r border-border">
+                                  <Button size="icon" variant="ghost" className="h-6 w-6">
+                                    <Pencil className="h-3 w-3 text-orange-500" />
+                                  </Button>
+                                </td>
+                                <td className="p-1.5 border-r border-border font-mono text-[11px] text-muted-foreground">{n.ref}</td>
+                                <td className="p-1.5 border-r border-border">
+                                  {isPrivate ? (
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400">
+                                      Private
+                                    </span>
+                                  ) : (
+                                    (n.tags || []).join(", ")
+                                  )}
+                                </td>
+                                <td className="p-1.5 border-r border-border whitespace-nowrap text-[11px]">{n.createdAt}</td>
+                                <td className="p-1.5 border-r border-border text-[11px] font-medium">{n.text}</td>
+                                <td className="p-1.5 border-r border-border text-[11px]">{n.author}</td>
+                                <td className="p-1.5 text-[11px]">{n.visibleOnDevice === false ? "No" : "Yes"}</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
