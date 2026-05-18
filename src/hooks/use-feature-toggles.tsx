@@ -72,6 +72,7 @@ const DEFAULTS: Record<FeatureKey, boolean> = {
   theMonitor: false,
   printableRota: false,
   buildRota: false,
+  caregiverTags: false,
 };
 
 type Ctx = {
