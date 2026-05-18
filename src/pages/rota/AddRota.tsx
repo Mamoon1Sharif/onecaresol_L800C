@@ -799,7 +799,19 @@ const AddRota = () => {
             >
               {form.medicationRequired ? (
                 uniqueMeds.length === 0 ? (
-                  <EmptyState text="No prescriptions on the MAR chart for this service member." />
+                  <div className="space-y-3">
+                    <EmptyState text="No prescriptions on the MAR chart for this service member." />
+                    <div className="flex justify-center">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setAddMedOpen(true)}
+                        className="gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add Medication
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 flex items-center gap-2 text-xs">
@@ -817,18 +829,28 @@ const AddRota = () => {
                         {uniqueMeds.length} prescription{uniqueMeds.length !== 1 ? "s" : ""} from MAR ·{" "}
                         {selectedMedIds.length} selected
                       </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedMedIds(
-                            selectedMedIds.length === uniqueMeds.length ? [] : uniqueMeds.map((m: any) => m.id),
-                          )
-                        }
-                        className="text-primary hover:underline font-medium"
-                      >
-                        {selectedMedIds.length === uniqueMeds.length ? "Clear all" : "Select all"}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setAddMedOpen(true)}
+                          className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                        >
+                          <Plus className="h-3 w-3" /> Add Medication
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedMedIds(
+                              selectedMedIds.length === uniqueMeds.length ? [] : uniqueMeds.map((m: any) => m.id),
+                            )
+                          }
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {selectedMedIds.length === uniqueMeds.length ? "Clear all" : "Select all"}
+                        </button>
+                      </div>
                     </div>
+
                     <div className="space-y-3">
                       {TOD_ORDER.concat(["Other" as any]).map((tod) => {
                         const items = medsByTod[tod] || [];
