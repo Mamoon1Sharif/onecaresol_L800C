@@ -197,7 +197,8 @@ const AddRota = () => {
       time_of_day: newMed.time_of_day || null,
       scheduled_time: newMed.scheduled_time || null,
       notes: newMed.notes || null,
-    });
+      service_type: newMed.service_type || form.serviceList || null,
+    } as any);
     setAddMedSaving(false);
     if (error) {
       toast.error(error.message);
