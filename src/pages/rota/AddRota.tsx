@@ -47,6 +47,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Plus } from "lucide-react";
 
 const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
 const minutes = ["00", "15", "30", "45"];
@@ -148,17 +151,65 @@ const AddRota = () => {
     return groups;
   }, [uniqueMeds]);
 
-  // Auto-select the meds that match the current shift window when medication is enabled.
+  // Auto-select meds whose service_type matches the selected service. Fall back to time-of-day match
+  // for legacy records without a service_type assigned.
   useEffect(() => {
     if (!form.medicationRequired) return;
-    const matching = uniqueMeds
-      .filter((m: any) => (m.time_of_day || "").toLowerCase() === shiftWindow.toLowerCase())
-      .map((m: any) => m.id);
+    const byService = uniqueMeds.filter((m: any) => (m.service_type || "") === form.serviceList);
+    const matching = (byService.length > 0
+      ? byService
+      : uniqueMeds.filter((m: any) => (m.time_of_day || "").toLowerCase() === shiftWindow.toLowerCase())
+    ).map((m: any) => m.id);
     setSelectedMedIds(matching);
-  }, [form.medicationRequired, shiftWindow, uniqueMeds]);
+  }, [form.medicationRequired, form.serviceList, shiftWindow, uniqueMeds]);
 
   const toggleMed = (id: string) => setSelectedMedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const toggleTask = (t: string) => setSelectedTasks((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
+
+  const [addMedOpen, setAddMedOpen] = useState(false);
+  const [addMedSaving, setAddMedSaving] = useState(false);
+  const [newMed, setNewMed] = useState({
+    medication: "",
+    dosage: "",
+    time_of_day: "" as "" | "Morning" | "Lunch" | "Tea" | "Evening" | "Night",
+    scheduled_time: "",
+    notes: "",
+    service_type: "" as string,
+  });
+  const resetNewMed = () =>
+    setNewMed({ medication: "", dosage: "", time_of_day: "", scheduled_time: "", notes: "", service_type: "" });
+
+  const handleAddMedication = async () => {
+    if (!selectedId) {
+      toast.error("Select a service member first");
+      return;
+    }
+    if (!newMed.medication.trim() || !newMed.dosage.trim()) {
+      toast.error("Medication name and dosage are required");
+      return;
+    }
+    setAddMedSaving(true);
+    const { error } = await supabase.from("medications").insert({
+      care_receiver_id: selectedId,
+      medication: newMed.medication.trim(),
+      dosage: newMed.dosage.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      time_of_day: newMed.time_of_day || null,
+      scheduled_time: newMed.scheduled_time || null,
+      notes: newMed.notes || null,
+      service_type: newMed.service_type || form.serviceList || null,
+    } as any);
+    setAddMedSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Medication added to MAR chart");
+    await queryClient.invalidateQueries({ queryKey: ["medications", selectedId] });
+    setAddMedOpen(false);
+    resetNewMed();
+  };
+
 
   const filtered = useMemo(
     () =>
@@ -753,7 +804,19 @@ const AddRota = () => {
             >
               {form.medicationRequired ? (
                 uniqueMeds.length === 0 ? (
-                  <EmptyState text="No prescriptions on the MAR chart for this service member." />
+                  <div className="space-y-3">
+                    <EmptyState text="No prescriptions on the MAR chart for this service member." />
+                    <div className="flex justify-center">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => setAddMedOpen(true)}
+                        className="gap-1.5"
+                      >
+                        <Plus className="h-3.5 w-3.5" /> Add Medication
+                      </Button>
+                    </div>
+                  </div>
                 ) : (
                   <>
                     <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 flex items-center gap-2 text-xs">
@@ -771,18 +834,28 @@ const AddRota = () => {
                         {uniqueMeds.length} prescription{uniqueMeds.length !== 1 ? "s" : ""} from MAR ·{" "}
                         {selectedMedIds.length} selected
                       </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedMedIds(
-                            selectedMedIds.length === uniqueMeds.length ? [] : uniqueMeds.map((m: any) => m.id),
-                          )
-                        }
-                        className="text-primary hover:underline font-medium"
-                      >
-                        {selectedMedIds.length === uniqueMeds.length ? "Clear all" : "Select all"}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setAddMedOpen(true)}
+                          className="text-primary hover:underline font-medium inline-flex items-center gap-1"
+                        >
+                          <Plus className="h-3 w-3" /> Add Medication
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedMedIds(
+                              selectedMedIds.length === uniqueMeds.length ? [] : uniqueMeds.map((m: any) => m.id),
+                            )
+                          }
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {selectedMedIds.length === uniqueMeds.length ? "Clear all" : "Select all"}
+                        </button>
+                      </div>
                     </div>
+
                     <div className="space-y-3">
                       {TOD_ORDER.concat(["Other" as any]).map((tod) => {
                         const items = medsByTod[tod] || [];
@@ -1299,6 +1372,85 @@ const AddRota = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={addMedOpen} onOpenChange={(o) => { setAddMedOpen(o); if (!o) resetNewMed(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Medication to MAR Chart</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Medication Name *</Label>
+              <Input
+                value={newMed.medication}
+                onChange={(e) => setNewMed({ ...newMed, medication: e.target.value })}
+                placeholder="e.g. Paracetamol"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Dosage *</Label>
+              <Input
+                value={newMed.dosage}
+                onChange={(e) => setNewMed({ ...newMed, dosage: e.target.value })}
+                placeholder="e.g. 500mg"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Time of Day</Label>
+              <Select
+                value={newMed.time_of_day || undefined}
+                onValueChange={(v) => setNewMed({ ...newMed, time_of_day: v as any })}
+              >
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Morning">Morning</SelectItem>
+                  <SelectItem value="Lunch">Lunch</SelectItem>
+                  <SelectItem value="Tea">Tea</SelectItem>
+                  <SelectItem value="Evening">Evening</SelectItem>
+                  <SelectItem value="Night">Night</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Service Type *</Label>
+              <Select
+                value={newMed.service_type || form.serviceList}
+                onValueChange={(v) => setNewMed({ ...newMed, service_type: v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Select service type" /></SelectTrigger>
+                <SelectContent>
+                  {SERVICE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Medications will auto-fill when this service type is selected on a rota.</p>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Scheduled Time</Label>
+              <Input
+                type="time"
+                value={newMed.scheduled_time}
+                onChange={(e) => setNewMed({ ...newMed, scheduled_time: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Notes</Label>
+              <Textarea
+                rows={3}
+                value={newMed.notes}
+                onChange={(e) => setNewMed({ ...newMed, notes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddMedOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddMedication} disabled={addMedSaving}>
+              {addMedSaving ? "Saving..." : "Add Medication"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };

@@ -10,7 +10,8 @@ export type FeatureKey =
   | "liveRunRoutes"
   | "theMonitor"
   | "printableRota"
-  | "buildRota";
+  | "buildRota"
+  | "caregiverTags";
 
 export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: string }> = {
   notifications: {
@@ -53,6 +54,10 @@ export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: st
     label: "Build Rota",
     description: "Build Rota under Rota in the sidebar",
   },
+  caregiverTags: {
+    label: "Care Giver Tags",
+    description: "Show tag chips on care giver cards",
+  },
 };
 
 const STORAGE_KEY = "feature_toggles_v1";
@@ -67,6 +72,7 @@ const DEFAULTS: Record<FeatureKey, boolean> = {
   theMonitor: false,
   printableRota: false,
   buildRota: false,
+  caregiverTags: false,
 };
 
 type Ctx = {

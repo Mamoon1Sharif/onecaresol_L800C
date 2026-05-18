@@ -10,6 +10,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const SERVICE_OPTIONS = [
+  "CHC - Morning Call",
+  "CHC - Lunch Call",
+  "CHC - Tea Call",
+  "CHC - Evening Call",
+  "Domiciliary",
+  "Live-In",
+  "Respite",
+  "Waking Night",
+  "Sleeping Night",
+];
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -35,6 +48,7 @@ const emptyDraft = {
   date: new Date().toISOString().slice(0, 10),
   administered_by: "",
   notes: "",
+  service_type: "",
 };
 
 export default function ReceiverMedication() {
@@ -57,7 +71,8 @@ export default function ReceiverMedication() {
         date: draft.date,
         administered_by: draft.administered_by || null,
         notes: draft.notes || null,
-      };
+        service_type: draft.service_type || null,
+      } as any;
       if (editing) {
         const { error } = await supabase.from("medications").update(payload).eq("id", editing.id);
         if (error) throw error;
@@ -103,6 +118,7 @@ export default function ReceiverMedication() {
       date: m.date,
       administered_by: m.administered_by ?? "",
       notes: m.notes ?? "",
+      service_type: (m as any).service_type ?? "",
     });
     setDialogOpen(true);
   };
@@ -186,6 +202,18 @@ export default function ReceiverMedication() {
             <div className="space-y-1">
               <Label className="text-xs">Date</Label>
               <Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Service Type *</Label>
+              <Select value={draft.service_type || undefined} onValueChange={(v) => setDraft({ ...draft, service_type: v })}>
+                <SelectTrigger><SelectValue placeholder="Which shift does this medication belong to?" /></SelectTrigger>
+                <SelectContent>
+                  {SERVICE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Determines which shift type auto-fetches this medication on the rota.</p>
             </div>
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">Administered By</Label>

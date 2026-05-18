@@ -4,30 +4,40 @@ import { AppLayout } from "@/components/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, MapPin, Phone, Heart } from "lucide-react";
+import { Search, Plus, MapPin, Phone, Heart, CalendarDays } from "lucide-react";
 import { useCareReceivers } from "@/hooks/use-care-data";
 import { getCareReceiverAvatar } from "@/lib/avatars";
 
+const STATUS_FILTERS = ["All", "Active", "On Hold", "Discharged"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
 const statusStyles: Record<string, string> = {
-  Active: "bg-success/15 text-success border-0",
-  "On Hold": "bg-warning/15 text-warning border-0",
-  Discharged: "bg-muted text-muted-foreground border-0",
+  Active: "bg-success/15 text-success",
+  "On Hold": "bg-warning/15 text-warning",
+  Discharged: "bg-muted text-muted-foreground",
 };
 
 const CareReceivers = () => {
   const { data: careReceivers = [], isLoading } = useCareReceivers();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 6;
   const navigate = useNavigate();
 
-  const filtered = careReceivers
-    .filter((cr) => cr.care_status !== "Discharged")
-    .filter((cr) => cr.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filtered = careReceivers.filter((cr) => {
+    const matchesSearch = cr.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    const status = cr.account_status ?? cr.care_status ?? "Active";
+    if (statusFilter === "All") return status !== "Discharged";
+    return status === statusFilter;
+  });
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+  const showResultCount = searchQuery.trim().length > 0;
 
   return (
     <AppLayout>
@@ -37,13 +47,13 @@ const CareReceivers = () => {
             <h1 className="text-2xl font-bold text-foreground">Service Members</h1>
             <p className="text-sm text-muted-foreground mt-1">Manage service members · {careReceivers.length} total</p>
           </div>
-          <Button className="gap-2" onClick={() => navigate("/carereceivers/new")}>
+          <Button onClick={() => navigate("/carereceivers/new")} className="gap-2 shrink-0">
             <Plus className="h-4 w-4" /> Add Service Member
           </Button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative max-w-sm flex-1">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative max-w-sm flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by name..."
@@ -52,12 +62,30 @@ const CareReceivers = () => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="pl-9 bg-card border-border"
+
             />
           </div>
-          <Badge variant="outline" className="text-sm px-3 py-1.5">
-            <Search className="h-3.5 w-3.5 mr-1.5" /> {filtered.length} results
-          </Badge>
+          <div className="flex items-center gap-1 border border-border rounded-lg p-1">
+            {STATUS_FILTERS.map((sf) => (
+              <Button
+                key={sf}
+                variant={statusFilter === sf ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-xs px-3"
+                onClick={() => {
+                  setStatusFilter(sf);
+                  setCurrentPage(1);
+                }}
+              >
+                {sf}
+              </Button>
+            ))}
+          </div>
+          {showResultCount && (
+            <Badge variant="outline" className="text-sm px-3 py-1.5">
+              <Search className="h-3.5 w-3.5 mr-1.5" /> {filtered.length} results
+            </Badge>
+          )}
         </div>
 
         {isLoading ? (
