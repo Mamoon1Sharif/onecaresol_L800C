@@ -810,7 +810,7 @@ function ShiftTasks({ visitId, shiftEnd, clockOut, isMissed = false }: { visitId
             title: r.title,
             done: !!r.is_completed,
             completedAt: r.completed_at
-              ? new Date(r.completed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
+              ? new Date(r.completed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })
               : undefined,
           })),
         );
