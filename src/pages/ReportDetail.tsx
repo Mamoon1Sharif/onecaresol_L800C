@@ -27,18 +27,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
-const PEOPLE = [
-  "Sarah Johnson",
-  "Michael Chen",
-  "Emma Williams",
-  "James O'Connor",
-  "Priya Patel",
-  "David Kim",
-  "Olivia Brown",
-  "Marcus Taylor",
-  "Sofia Rodriguez",
-  "Ahmed Hassan",
-];
+import { useCareGivers, useCareReceivers } from "@/hooks/use-care-data";
 
 const TYPE_OPTIONS = [
   "Active Care Givers",
@@ -57,11 +46,11 @@ const FINANCE_TYPE_OPTIONS = [
 function MultiSelectPeople({
   selected,
   onChange,
-  options = PEOPLE,
+  options,
 }: {
   selected: string[];
   onChange: (next: string[]) => void;
-  options?: string[];
+  options: string[];
 }) {
   const [open, setOpen] = useState(false);
   const label =
@@ -199,10 +188,20 @@ export default function ReportDetail() {
   const reportName = name ? decodeURIComponent(name) : "Report";
   const category = params.get("category") ?? "Reports";
   const isFinance = category === "Finance Reports";
+  const isServiceMember = category === "Service Member Reports";
 
   const typeOptions = isFinance ? FINANCE_TYPE_OPTIONS : TYPE_OPTIONS;
-  const peopleOptions = PEOPLE;
-  const personLabel = category === "Service Member Reports" ? "Service Member" : "Care Giver";
+  const personLabel = isServiceMember ? "Service Member" : "Care Giver";
+
+  const { data: careGiversData } = useCareGivers();
+  const { data: careReceiversData } = useCareReceivers();
+
+  const peopleOptions = useMemo(() => {
+    if (isServiceMember) {
+      return careReceiversData?.map((cr: any) => cr.name) || [];
+    }
+    return careGiversData?.map((cg: any) => cg.name) || [];
+  }, [isServiceMember, careGiversData, careReceiversData]);
 
   const [type, setType] = useState(typeOptions[0]);
   const [people, setPeople] = useState<string[]>([]);
