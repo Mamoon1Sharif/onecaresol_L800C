@@ -1412,6 +1412,21 @@ const AddRota = () => {
               </Select>
             </div>
             <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Service Type *</Label>
+              <Select
+                value={newMed.service_type || form.serviceList}
+                onValueChange={(v) => setNewMed({ ...newMed, service_type: v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Select service type" /></SelectTrigger>
+                <SelectContent>
+                  {SERVICE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Medications will auto-fill when this service type is selected on a rota.</p>
+            </div>
+            <div className="col-span-2 space-y-1">
               <Label className="text-xs">Scheduled Time</Label>
               <Input
                 type="time"
