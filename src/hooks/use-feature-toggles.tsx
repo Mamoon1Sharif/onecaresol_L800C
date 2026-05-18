@@ -54,6 +54,10 @@ export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: st
     label: "Build Rota",
     description: "Build Rota under Rota in the sidebar",
   },
+  caregiverTags: {
+    label: "Care Giver Tags",
+    description: "Show tag chips on care giver cards",
+  },
 };
 
 const STORAGE_KEY = "feature_toggles_v1";
