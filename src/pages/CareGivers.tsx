@@ -205,7 +205,7 @@ const CareGivers = () => {
                     </div>
                   </div>
                 </div>
-                {Array.isArray((cg as any).tags) && ((cg as any).tags as string[]).filter((t) => t.toLowerCase() !== "on leave").length > 0 && (() => {
+                {tagsEnabled && Array.isArray((cg as any).tags) && ((cg as any).tags as string[]).filter((t) => t.toLowerCase() !== "on leave").length > 0 && (() => {
                   const tags = ((cg as any).tags as string[]).filter((t) => t.toLowerCase() !== "on leave");
                   const isExpanded = expandedTags[cg.id];
                   const visibleTags = isExpanded ? tags : tags.slice(0, 3);
