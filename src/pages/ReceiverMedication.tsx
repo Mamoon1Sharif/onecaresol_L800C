@@ -204,6 +204,18 @@ export default function ReceiverMedication() {
               <Input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
             </div>
             <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Service Type *</Label>
+              <Select value={draft.service_type || undefined} onValueChange={(v) => setDraft({ ...draft, service_type: v })}>
+                <SelectTrigger><SelectValue placeholder="Which shift does this medication belong to?" /></SelectTrigger>
+                <SelectContent>
+                  {SERVICE_OPTIONS.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground">Determines which shift type auto-fetches this medication on the rota.</p>
+            </div>
+            <div className="col-span-2 space-y-1">
               <Label className="text-xs">Administered By</Label>
               <Input value={draft.administered_by} onChange={(e) => setDraft({ ...draft, administered_by: e.target.value })} />
             </div>
