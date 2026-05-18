@@ -14,6 +14,8 @@ const STATUS_FILTERS = ["All", "Active", "Non-Active", "Onboarding"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 const CareGivers = () => {
+  const { isEnabled } = useFeatureToggles();
+  const tagsEnabled = isEnabled("caregiverTags");
   const { data: careGivers = [], isLoading } = useCareGivers();
   const todayStr = new Date().toISOString().split("T")[0];
   const { data: todayVisits = [] } = useDailyVisits(todayStr);
