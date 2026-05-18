@@ -1367,6 +1367,70 @@ const AddRota = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={addMedOpen} onOpenChange={(o) => { setAddMedOpen(o); if (!o) resetNewMed(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Medication to MAR Chart</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Medication Name *</Label>
+              <Input
+                value={newMed.medication}
+                onChange={(e) => setNewMed({ ...newMed, medication: e.target.value })}
+                placeholder="e.g. Paracetamol"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Dosage *</Label>
+              <Input
+                value={newMed.dosage}
+                onChange={(e) => setNewMed({ ...newMed, dosage: e.target.value })}
+                placeholder="e.g. 500mg"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Time of Day</Label>
+              <Select
+                value={newMed.time_of_day || undefined}
+                onValueChange={(v) => setNewMed({ ...newMed, time_of_day: v as any })}
+              >
+                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Morning">Morning</SelectItem>
+                  <SelectItem value="Lunch">Lunch</SelectItem>
+                  <SelectItem value="Tea">Tea</SelectItem>
+                  <SelectItem value="Evening">Evening</SelectItem>
+                  <SelectItem value="Night">Night</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Scheduled Time</Label>
+              <Input
+                type="time"
+                value={newMed.scheduled_time}
+                onChange={(e) => setNewMed({ ...newMed, scheduled_time: e.target.value })}
+              />
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label className="text-xs">Notes</Label>
+              <Textarea
+                rows={3}
+                value={newMed.notes}
+                onChange={(e) => setNewMed({ ...newMed, notes: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddMedOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddMedication} disabled={addMedSaving}>
+              {addMedSaving ? "Saving..." : "Add Medication"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 };
