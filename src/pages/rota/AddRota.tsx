@@ -163,6 +163,49 @@ const AddRota = () => {
   const toggleMed = (id: string) => setSelectedMedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const toggleTask = (t: string) => setSelectedTasks((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
 
+  const [addMedOpen, setAddMedOpen] = useState(false);
+  const [addMedSaving, setAddMedSaving] = useState(false);
+  const [newMed, setNewMed] = useState({
+    medication: "",
+    dosage: "",
+    time_of_day: "" as "" | "Morning" | "Lunch" | "Tea" | "Evening" | "Night",
+    scheduled_time: "",
+    notes: "",
+  });
+  const resetNewMed = () =>
+    setNewMed({ medication: "", dosage: "", time_of_day: "", scheduled_time: "", notes: "" });
+
+  const handleAddMedication = async () => {
+    if (!selectedId) {
+      toast.error("Select a service member first");
+      return;
+    }
+    if (!newMed.medication.trim() || !newMed.dosage.trim()) {
+      toast.error("Medication name and dosage are required");
+      return;
+    }
+    setAddMedSaving(true);
+    const { error } = await supabase.from("medications").insert({
+      care_receiver_id: selectedId,
+      medication: newMed.medication.trim(),
+      dosage: newMed.dosage.trim(),
+      date: new Date().toISOString().slice(0, 10),
+      time_of_day: newMed.time_of_day || null,
+      scheduled_time: newMed.scheduled_time || null,
+      notes: newMed.notes || null,
+    });
+    setAddMedSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Medication added to MAR chart");
+    await queryClient.invalidateQueries({ queryKey: ["medications", selectedId] });
+    setAddMedOpen(false);
+    resetNewMed();
+  };
+
+
   const filtered = useMemo(
     () =>
       receivers
