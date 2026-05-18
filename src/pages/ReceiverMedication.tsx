@@ -10,6 +10,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const SERVICE_OPTIONS = [
+  "CHC - Morning Call",
+  "CHC - Lunch Call",
+  "CHC - Tea Call",
+  "CHC - Evening Call",
+  "Domiciliary",
+  "Live-In",
+  "Respite",
+  "Waking Night",
+  "Sleeping Night",
+];
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
