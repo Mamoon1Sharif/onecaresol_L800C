@@ -10,7 +10,8 @@ export type FeatureKey =
   | "liveRunRoutes"
   | "theMonitor"
   | "printableRota"
-  | "buildRota";
+  | "buildRota"
+  | "caregiverTags";
 
 export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: string }> = {
   notifications: {
