@@ -151,14 +151,17 @@ const AddRota = () => {
     return groups;
   }, [uniqueMeds]);
 
-  // Auto-select the meds that match the current shift window when medication is enabled.
+  // Auto-select meds whose service_type matches the selected service. Fall back to time-of-day match
+  // for legacy records without a service_type assigned.
   useEffect(() => {
     if (!form.medicationRequired) return;
-    const matching = uniqueMeds
-      .filter((m: any) => (m.time_of_day || "").toLowerCase() === shiftWindow.toLowerCase())
-      .map((m: any) => m.id);
+    const byService = uniqueMeds.filter((m: any) => (m.service_type || "") === form.serviceList);
+    const matching = (byService.length > 0
+      ? byService
+      : uniqueMeds.filter((m: any) => (m.time_of_day || "").toLowerCase() === shiftWindow.toLowerCase())
+    ).map((m: any) => m.id);
     setSelectedMedIds(matching);
-  }, [form.medicationRequired, shiftWindow, uniqueMeds]);
+  }, [form.medicationRequired, form.serviceList, shiftWindow, uniqueMeds]);
 
   const toggleMed = (id: string) => setSelectedMedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const toggleTask = (t: string) => setSelectedTasks((p) => (p.includes(t) ? p.filter((x) => x !== t) : [...p, t]));
@@ -171,9 +174,10 @@ const AddRota = () => {
     time_of_day: "" as "" | "Morning" | "Lunch" | "Tea" | "Evening" | "Night",
     scheduled_time: "",
     notes: "",
+    service_type: "" as string,
   });
   const resetNewMed = () =>
-    setNewMed({ medication: "", dosage: "", time_of_day: "", scheduled_time: "", notes: "" });
+    setNewMed({ medication: "", dosage: "", time_of_day: "", scheduled_time: "", notes: "", service_type: "" });
 
   const handleAddMedication = async () => {
     if (!selectedId) {
