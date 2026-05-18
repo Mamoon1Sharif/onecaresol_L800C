@@ -48,6 +48,7 @@ const emptyDraft = {
   date: new Date().toISOString().slice(0, 10),
   administered_by: "",
   notes: "",
+  service_type: "",
 };
 
 export default function ReceiverMedication() {
