@@ -71,7 +71,8 @@ export default function ReceiverMedication() {
         date: draft.date,
         administered_by: draft.administered_by || null,
         notes: draft.notes || null,
-      };
+        service_type: draft.service_type || null,
+      } as any;
       if (editing) {
         const { error } = await supabase.from("medications").update(payload).eq("id", editing.id);
         if (error) throw error;
