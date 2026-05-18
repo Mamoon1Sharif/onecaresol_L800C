@@ -64,6 +64,7 @@ export function AppHeader() {
               <ToggleLeft className="h-4 w-4 mr-2" />
               Feature Toggles
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={handleLogout}>Log Out</DropdownMenuItem>
           </DropdownMenuContent>
@@ -74,3 +75,4 @@ export function AppHeader() {
     </header>
   );
 }
+//this is for testing pull request and merge
