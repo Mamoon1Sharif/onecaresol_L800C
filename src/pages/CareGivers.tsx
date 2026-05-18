@@ -8,6 +8,7 @@ import { Search, Plus, Phone, User, Clock, CalendarDays, Filter, Briefcase } fro
 import { useCareGivers, useDailyVisits } from "@/hooks/use-care-data";
 import { useCaregiverHolidayEntries, caregiverUnavailableReason } from "@/hooks/use-caregiver-availability";
 import { getCareGiverAvatar } from "@/lib/avatars";
+import { useFeatureToggles } from "@/hooks/use-feature-toggles";
 
 const STATUS_FILTERS = ["All", "Active", "Non-Active", "Onboarding"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
