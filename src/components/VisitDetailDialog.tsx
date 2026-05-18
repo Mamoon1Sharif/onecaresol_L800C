@@ -899,7 +899,7 @@ function ShiftTasks({ visitId, shiftEnd, clockOut, isMissed = false }: { visitId
             <ul className="space-y-1">
               {completed.map((t) => (
                 <li key={t.id} className="flex items-center gap-2 text-xs">
-                  <input type="checkbox" checked onChange={() => toggle(t.id)} className="rounded text-success" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
                   <span className="line-through text-muted-foreground flex-1">{t.title}</span>
                   <span className="font-mono text-[10px] text-success">{t.completedAt}</span>
                 </li>
@@ -1026,9 +1026,7 @@ function MedicationFeed({ visitId }: { visitId: string }) {
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] font-mono text-muted-foreground">
-                    {m.scheduled_time || new Date(m.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
+
                 </div>
                 {m.notes && (
                   <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{m.notes}</p>
