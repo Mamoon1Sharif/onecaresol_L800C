@@ -118,6 +118,7 @@ export default function ReceiverMedication() {
       date: m.date,
       administered_by: m.administered_by ?? "",
       notes: m.notes ?? "",
+      service_type: (m as any).service_type ?? "",
     });
     setDialogOpen(true);
   };
