@@ -17,11 +17,17 @@ const statusStyles: Record<string, string> = {
 const CareReceivers = () => {
   const { data: careReceivers = [], isLoading } = useCareReceivers();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 9;
   const navigate = useNavigate();
 
   const filtered = careReceivers
     .filter((cr) => cr.care_status !== "Discharged")
     .filter((cr) => cr.name.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = filtered.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <AppLayout>
@@ -39,7 +45,15 @@ const CareReceivers = () => {
         <div className="flex items-center gap-3">
           <div className="relative max-w-sm flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-card border-border" />
+            <Input 
+              placeholder="Search by name..." 
+              value={searchQuery} 
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }} 
+              className="pl-9 bg-card border-border" 
+            />
           </div>
           <Badge variant="outline" className="text-sm px-3 py-1.5">
             <Search className="h-3.5 w-3.5 mr-1.5" /> {filtered.length} results
@@ -51,8 +65,9 @@ const CareReceivers = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">No service members found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((cr) => (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedData.map((cr) => (
               <div
                 key={cr.id}
                 onClick={() => navigate(`/carereceivers/${cr.id}`)}
@@ -95,7 +110,32 @@ const CareReceivers = () => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </AppLayout>

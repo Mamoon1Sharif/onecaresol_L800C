@@ -20,6 +20,8 @@ const CareGivers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const [expandedTags, setExpandedTags] = useState<Record<string, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
   const navigate = useNavigate();
 
   // Set of caregiver IDs currently on shift (checked in but not checked out)
@@ -71,6 +73,10 @@ const CareGivers = () => {
     return cg.status === statusFilter;
   });
 
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = filtered.slice(startIndex, startIndex + itemsPerPage);
+
   const showResultCount = searchQuery.trim().length > 0;
 
   return (
@@ -89,7 +95,15 @@ const CareGivers = () => {
         <div className="flex items-center gap-3 flex-wrap">
           <div className="relative max-w-sm flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search by name..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-card border-border" />
+            <Input 
+              placeholder="Search by name..." 
+              value={searchQuery} 
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }} 
+              className="pl-9 bg-card border-border" 
+            />
           </div>
           <div className="flex items-center gap-1 border border-border rounded-lg p-1">
             {STATUS_FILTERS.map((sf) => (
@@ -98,7 +112,10 @@ const CareGivers = () => {
                 variant={statusFilter === sf ? "default" : "ghost"}
                 size="sm"
                 className="h-7 text-xs px-3"
-                onClick={() => setStatusFilter(sf)}
+                onClick={() => {
+                  setStatusFilter(sf);
+                  setCurrentPage(1);
+                }}
               >
                 {sf}
               </Button>
@@ -116,9 +133,10 @@ const CareGivers = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">No care givers found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((cg) => {
-              const reason = caregiverUnavailableReason(cg as any, holidayEntries, todayStr);
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {paginatedData.map((cg) => {
+                const reason = caregiverUnavailableReason(cg as any, holidayEntries, todayStr);
               const isOnShift = onShiftIds.has(cg.id);
               const unifiedReasonLabel = reason && reason.kind === "holiday" ? "On Leave" : reason?.label;
               const badgeLabel = reason ? unifiedReasonLabel : cg.status;
@@ -212,7 +230,32 @@ const CareGivers = () => {
                 })()}
               </div>
             );})}
-          </div>
+            </div>
+            
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </AppLayout>
