@@ -146,40 +146,63 @@ export default function ReceiverMedication() {
                 </Button>
               </div>
 
-              {meds.length === 0 ? (
-                <div className="py-8 text-sm text-muted-foreground">No Medication Records</div>
-              ) : (
-                <div className="border border-border rounded-md overflow-hidden">
-                  <div className="grid grid-cols-[1.4fr_0.8fr_1fr_1fr_1.2fr_60px] gap-2 px-3 py-2 bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
-                    <div>Medication</div>
-                    <div>Dosage</div>
-                    <div>Date</div>
-                    <div>Administered By</div>
-                    <div>Notes</div>
-                    <div className="text-right">Actions</div>
-                  </div>
-                  {meds.map((m: any, i) => (
-                    <div key={m.id} className={`grid grid-cols-[1.4fr_0.8fr_1fr_1fr_1.2fr_60px] gap-2 px-3 py-2.5 text-xs items-center ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
-                      <div className="flex items-center gap-2 text-foreground">
-                        <Pill className="h-3.5 w-3.5 text-primary" />
-                        {m.medication}
-                      </div>
-                      <div className="text-muted-foreground">{m.dosage}</div>
-                      <div className="text-muted-foreground">{m.date ? format(new Date(m.date), "dd/MM/yyyy") : "—"}</div>
-                      <div className="text-muted-foreground">{m.administered_by || "—"}</div>
-                      <div className="text-muted-foreground truncate">{m.notes || "—"}</div>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(m)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeletingId(m.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
+              <Tabs defaultValue="All" className="w-full">
+                <TabsList className="bg-muted/40 flex flex-wrap h-auto gap-1 justify-start">
+                  <TabsTrigger value="All" className="text-xs">All</TabsTrigger>
+                  {SERVICE_OPTIONS.map((s) => (
+                    <TabsTrigger key={s} value={s} className="text-xs">{s}</TabsTrigger>
                   ))}
-                </div>
-              )}
+                  <TabsTrigger value="__none" className="text-xs">Unassigned</TabsTrigger>
+                </TabsList>
+
+                {["All", ...SERVICE_OPTIONS, "__none"].map((tab) => {
+                  const filtered = (meds as any[]).filter((m) => {
+                    if (tab === "All") return true;
+                    if (tab === "__none") return !m.service_type;
+                    return m.service_type === tab;
+                  });
+                  return (
+                    <TabsContent key={tab} value={tab} className="mt-3">
+                      {filtered.length === 0 ? (
+                        <div className="py-8 text-sm text-muted-foreground text-center">No Medication Records</div>
+                      ) : (
+                        <div className="border border-border rounded-md overflow-hidden">
+                          <div className="grid grid-cols-[1.4fr_0.8fr_1fr_1fr_1fr_1.2fr_60px] gap-2 px-3 py-2 bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground border-b border-border">
+                            <div>Medication</div>
+                            <div>Dosage</div>
+                            <div>Service Type</div>
+                            <div>Date</div>
+                            <div>Administered By</div>
+                            <div>Notes</div>
+                            <div className="text-right">Actions</div>
+                          </div>
+                          {filtered.map((m: any, i) => (
+                            <div key={m.id} className={`grid grid-cols-[1.4fr_0.8fr_1fr_1fr_1fr_1.2fr_60px] gap-2 px-3 py-2.5 text-xs items-center ${i % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
+                              <div className="flex items-center gap-2 text-foreground">
+                                <Pill className="h-3.5 w-3.5 text-primary" />
+                                {m.medication}
+                              </div>
+                              <div className="text-muted-foreground">{m.dosage}</div>
+                              <div className="text-muted-foreground truncate">{m.service_type || "—"}</div>
+                              <div className="text-muted-foreground">{m.date ? format(new Date(m.date), "dd/MM/yyyy") : "—"}</div>
+                              <div className="text-muted-foreground">{m.administered_by || "—"}</div>
+                              <div className="text-muted-foreground truncate">{m.notes || "—"}</div>
+                              <div className="flex items-center justify-end gap-1">
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => openEdit(m)}>
+                                  <Pencil className="h-3 w-3" />
+                                </Button>
+                                <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => setDeletingId(m.id)}>
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
             </TabsContent>
           </Tabs>
         </Card>
