@@ -21,13 +21,12 @@ type Person = {
   kind: "team" | "service";
 };
 
-// UK postcode → rough coords (deterministic mock for demo) so pins land on the map
+// deterministic mock fallback if lat/lng is missing
 function seededCoord(seed: string): [number, number] {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  // Cluster around the West Midlands like the screenshot
-  const lat = 52.0 + ((h % 1000) / 1000) * 1.6; // 52.0 - 53.6
-  const lng = -2.6 + (((h >> 10) % 1000) / 1000) * 1.8; // -2.6 - -0.8
+  const lat = 52.0 + ((h % 1000) / 1000) * 1.6;
+  const lng = -2.6 + (((h >> 10) % 1000) / 1000) * 1.8;
   return [lat, lng];
 }
 
@@ -83,6 +82,18 @@ function FitToMarkers({ points }: { points: Person[] }) {
   return null;
 }
 
+function FlyToSelected({ selectedId, points }: { selectedId: string | null; points: Person[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!selectedId) return;
+    const p = points.find((x) => x.id === selectedId);
+    if (p) {
+      map.flyTo([p.lat, p.lng], 14, { duration: 1.5 });
+    }
+  }, [selectedId, points, map]);
+  return null;
+}
+
 export default function LocationTracking() {
   const [tab, setTab] = useState<TabKey>("team");
   const [showTeam, setShowTeam] = useState(true);
@@ -97,10 +108,10 @@ export default function LocationTracking() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("care_givers")
-        .select("id,name")
+        .select("*")
         .order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data as any[]) ?? [];
     },
   });
 
@@ -109,17 +120,19 @@ export default function LocationTracking() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("care_receivers")
-        .select("id,name")
+        .select("*")
         .order("name");
       if (error) throw error;
-      return data ?? [];
+      return (data as any[]) ?? [];
     },
   });
 
   const teamPeople: Person[] = useMemo(
     () =>
       caregivers.map((c) => {
-        const [lat, lng] = seededCoord(c.id);
+        const [fallbackLat, fallbackLng] = seededCoord(c.id);
+        const lat = c.latitude != null ? Number(c.latitude) : fallbackLat;
+        const lng = c.longitude != null ? Number(c.longitude) : fallbackLng;
         return { id: c.id, name: c.name, initials: initialsOf(c.name), lat, lng, kind: "team" };
       }),
     [caregivers],
@@ -128,7 +141,9 @@ export default function LocationTracking() {
   const servicePeople: Person[] = useMemo(
     () =>
       receivers.map((r) => {
-        const [lat, lng] = seededCoord(r.id + "-r");
+        const [fallbackLat, fallbackLng] = seededCoord(r.id + "-r");
+        const lat = r.latitude != null ? Number(r.latitude) : fallbackLat;
+        const lng = r.longitude != null ? Number(r.longitude) : fallbackLng;
         return { id: r.id, name: r.name, initials: initialsOf(r.name), lat, lng, kind: "service" };
       }),
     [receivers],
@@ -276,6 +291,7 @@ export default function LocationTracking() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <FitToMarkers points={visibleMarkers} />
+                <FlyToSelected selectedId={selectedId} points={visibleMarkers} />
                 {visibleMarkers.map((p) => (
                   <Marker
                     key={`${p.kind}-${p.id}`}
