@@ -4,30 +4,40 @@ import { AppLayout } from "@/components/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, MapPin, Phone, Heart } from "lucide-react";
+import { Search, Plus, MapPin, Phone, Heart, CalendarDays } from "lucide-react";
 import { useCareReceivers } from "@/hooks/use-care-data";
 import { getCareReceiverAvatar } from "@/lib/avatars";
 
+const STATUS_FILTERS = ["All", "Active", "On Hold", "Discharged"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+
 const statusStyles: Record<string, string> = {
-  Active: "bg-success/15 text-success border-0",
-  "On Hold": "bg-warning/15 text-warning border-0",
-  Discharged: "bg-muted text-muted-foreground border-0",
+  Active: "bg-success/15 text-success",
+  "On Hold": "bg-warning/15 text-warning",
+  Discharged: "bg-muted text-muted-foreground",
 };
 
 const CareReceivers = () => {
   const { data: careReceivers = [], isLoading } = useCareReceivers();
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 9;
+  const itemsPerPage = 6;
   const navigate = useNavigate();
 
-  const filtered = careReceivers
-    .filter((cr) => cr.care_status !== "Discharged")
-    .filter((cr) => cr.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filtered = careReceivers.filter((cr) => {
+    const matchesSearch = cr.name.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+    const status = cr.account_status ?? cr.care_status ?? "Active";
+    if (statusFilter === "All") return status !== "Discharged";
+    return status === statusFilter;
+  });
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedData = filtered.slice(startIndex, startIndex + itemsPerPage);
+
+  const showResultCount = searchQuery.trim().length > 0;
 
   return (
     <AppLayout>
@@ -37,27 +47,45 @@ const CareReceivers = () => {
             <h1 className="text-2xl font-bold text-foreground">Service Members</h1>
             <p className="text-sm text-muted-foreground mt-1">Manage service members · {careReceivers.length} total</p>
           </div>
-          <Button className="gap-2" onClick={() => navigate("/carereceivers/new")}>
+          <Button onClick={() => navigate("/carereceivers/new")} className="gap-2 shrink-0">
             <Plus className="h-4 w-4" /> Add Service Member
           </Button>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative max-w-sm flex-1">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="relative max-w-sm flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search by name..." 
-              value={searchQuery} 
+            <Input
+              placeholder="Search by name..."
+              value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
-              }} 
-              className="pl-9 bg-card border-border" 
+              }}
+              className="pl-9 bg-card border-border"
             />
           </div>
-          <Badge variant="outline" className="text-sm px-3 py-1.5">
-            <Search className="h-3.5 w-3.5 mr-1.5" /> {filtered.length} results
-          </Badge>
+          <div className="flex items-center gap-1 border border-border rounded-lg p-1">
+            {STATUS_FILTERS.map((sf) => (
+              <Button
+                key={sf}
+                variant={statusFilter === sf ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-xs px-3"
+                onClick={() => {
+                  setStatusFilter(sf);
+                  setCurrentPage(1);
+                }}
+              >
+                {sf}
+              </Button>
+            ))}
+          </div>
+          {showResultCount && (
+            <Badge variant="outline" className="text-sm px-3 py-1.5">
+              <Search className="h-3.5 w-3.5 mr-1.5" /> {filtered.length} results
+            </Badge>
+          )}
         </div>
 
         {isLoading ? (
@@ -67,49 +95,61 @@ const CareReceivers = () => {
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginatedData.map((cr) => (
-              <div
-                key={cr.id}
-                onClick={() => navigate(`/carereceivers/${cr.id}`)}
-                className="group border border-border rounded-xl bg-card p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm truncate">{cr.name}</h3>
-                    {cr.dnacpr && (
-                      <Badge variant="destructive" className="shrink-0 text-[10px] px-1.5 py-0 gap-0.5">
-                        <Heart className="h-2.5 w-2.5" /> DNACPR
-                      </Badge>
-                    )}
-                  </div>
-                  <Badge
-                    variant="default"
-                    className={`shrink-0 text-[10px] px-2 py-0.5 ${statusStyles[cr.account_status ?? cr.care_status ?? "Active"] ?? ""}`}
+              {paginatedData.map((cr) => {
+                const status = cr.account_status ?? cr.care_status ?? "Active";
+                return (
+                  <div
+                    key={cr.id}
+                    className="group border border-border rounded-xl bg-card cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200 flex flex-col min-h-[260px]"
                   >
-                    {cr.account_status ?? cr.care_status ?? "Active"}
-                  </Badge>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="h-16 w-16 rounded-full border-2 border-border overflow-hidden shrink-0">
-                    <img src={getCareReceiverAvatar(cr.id, cr.avatar_url)} alt={cr.name} className="h-full w-full object-cover" loading="lazy" />
+                    <div
+                      className="p-5 flex-1"
+                      onClick={() => navigate(`/carereceivers/${cr.id}`)}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <Badge className={`text-xs px-2.5 py-0.5 border-0 ${statusStyles[status] ?? "bg-muted text-muted-foreground"}`}>
+                            {status}
+                          </Badge>
+                          {cr.dnacpr && (
+                            <Badge variant="destructive" className="text-xs px-2.5 py-0.5 border-0 gap-1">
+                              <Heart className="h-3 w-3" /> DNACPR
+                            </Badge>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/carereceivers/${cr.id}`); }}
+                        >
+                          <CalendarDays className="h-4.5 w-4.5" />
+                        </Button>
+                      </div>
+                      <div className="flex flex-col items-center text-center mb-4">
+                        <div className="h-24 w-24 rounded-full border-2 border-border overflow-hidden mb-3">
+                          <img src={getCareReceiverAvatar(cr.id, cr.avatar_url)} alt={cr.name} className="h-full w-full object-cover" loading="lazy" />
+                        </div>
+                        <h3 className="font-bold text-foreground text-lg">{cr.name}</h3>
+                        <div className="mt-2 space-y-1.5 w-full">
+                          {cr.next_of_kin_phone && (
+                            <p className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                              <Phone className="h-4 w-4 shrink-0" />
+                              <span className="text-base">{cr.next_of_kin_phone}</span>
+                            </p>
+                          )}
+                          {cr.address && (
+                            <p className="flex items-center justify-center gap-1.5 text-muted-foreground">
+                              <MapPin className="h-4 w-4 shrink-0" />
+                              <span className="text-base leading-snug line-clamp-1">{cr.address}</span>
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 space-y-1.5 text-sm">
-                    {cr.address && (
-                      <p className="text-muted-foreground text-xs leading-tight line-clamp-2 flex items-start gap-1.5">
-                        <MapPin className="h-3 w-3 shrink-0 mt-0.5" />
-                        {cr.address}
-                      </p>
-                    )}
-                    {cr.next_of_kin_phone && (
-                      <p className="flex items-center gap-1.5 text-foreground">
-                        <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-xs">{cr.next_of_kin_phone}</span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
             </div>
 
             {totalPages > 1 && (
