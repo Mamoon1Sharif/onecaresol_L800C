@@ -8,11 +8,14 @@ import { Search, Plus, Phone, User, Clock, CalendarDays, Filter, Briefcase } fro
 import { useCareGivers, useDailyVisits } from "@/hooks/use-care-data";
 import { useCaregiverHolidayEntries, caregiverUnavailableReason } from "@/hooks/use-caregiver-availability";
 import { getCareGiverAvatar } from "@/lib/avatars";
+import { useFeatureToggles } from "@/hooks/use-feature-toggles";
 
 const STATUS_FILTERS = ["All", "Active", "Non-Active", "Onboarding"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 const CareGivers = () => {
+  const { isEnabled } = useFeatureToggles();
+  const tagsEnabled = isEnabled("caregiverTags");
   const { data: careGivers = [], isLoading } = useCareGivers();
   const todayStr = new Date().toISOString().split("T")[0];
   const { data: todayVisits = [] } = useDailyVisits(todayStr);
@@ -202,7 +205,7 @@ const CareGivers = () => {
                     </div>
                   </div>
                 </div>
-                {Array.isArray((cg as any).tags) && ((cg as any).tags as string[]).filter((t) => t.toLowerCase() !== "on leave").length > 0 && (() => {
+                {tagsEnabled && Array.isArray((cg as any).tags) && ((cg as any).tags as string[]).filter((t) => t.toLowerCase() !== "on leave").length > 0 && (() => {
                   const tags = ((cg as any).tags as string[]).filter((t) => t.toLowerCase() !== "on leave");
                   const isExpanded = expandedTags[cg.id];
                   const visibleTags = isExpanded ? tags : tags.slice(0, 3);
