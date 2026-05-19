@@ -391,11 +391,24 @@ export function LiveRotaShiftDialog({
               </div>
             </section>
 
-            {/* Staff + Availability */}
+            {/* Care Givers + Availability */}
             <StaffAvailabilitySection
               caregivers={caregivers as any[]}
               currentStaffName={current.staff}
               shiftDate={current.date}
+              shiftRef={current.ref}
+              onAssign={(name) => {
+                setCurrent({ ...current, staff: name });
+                setRemoved(false);
+                try {
+                  const KEY = "assigned_shifts_v1";
+                  const map = JSON.parse(localStorage.getItem(KEY) || "{}");
+                  map[current.ref] = name;
+                  localStorage.setItem(KEY, JSON.stringify(map));
+                } catch {}
+                removePendingClashesForRef(current.ref);
+                toast.success(`${name} assigned to shift ${current.ref}`);
+              }}
             />
 
 
