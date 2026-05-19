@@ -1,18 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { getCareGiverAvatar } from "@/lib/avatars";
 import { AvatarUpload } from "@/components/AvatarUpload";
-import { useDeleteCareGiver } from "@/hooks/use-care-data";
+import { useDeleteCareGiver, useUpdateCareGiver } from "@/hooks/use-care-data";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarDays, Phone, Mail, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, Phone, Mail, Trash2, Loader2, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CAREGIVER_STATUS_OPTIONS } from "@/lib/profile-options";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CareGiver = Tables<"care_givers">;
