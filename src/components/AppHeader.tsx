@@ -96,6 +96,12 @@ export function AppHeader() {
       <div className="flex items-center gap-1 md:gap-1.5">
         {isEnabled("notifications") && (
           <TooltipProvider delayDuration={120}>
+            <div className="hidden md:flex items-center gap-2 mr-1 pr-3 border-r border-border tabular-nums">
+              <div className="flex flex-col leading-none">
+                <span className="text-[11px] font-medium text-muted-foreground">{dateStr}</span>
+                <span className="text-sm font-bold text-foreground tracking-tight mt-0.5">{timeStr}</span>
+              </div>
+            </div>
             <div className="hidden sm:flex items-center gap-0.5 mr-1 pr-2 border-r border-border">
               {actions.map((a) => {
                 const Icon = a.icon;
