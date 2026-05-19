@@ -33,6 +33,7 @@ import TheMonitor from "./pages/rota/TheMonitor.tsx";
 import PrintableRota from "./pages/rota/PrintableRota.tsx";
 import BuildRota from "./pages/rota/BuildRota.tsx";
 import Conflicts from "./pages/rota/Conflicts.tsx";
+import LiveSingleRota from "./pages/rota/LiveSingleRota.tsx";
 import HolidaysAbsence from "./pages/HolidaysAbsence.tsx";
 import Messaging from "./pages/Messaging.tsx";
 import Medication from "./pages/Medication.tsx";
