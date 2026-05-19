@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, ChevronDown, ToggleLeft, AlertOctagon, AlertTriangle, MessageSquare, Settings, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
@@ -34,7 +34,19 @@ const TONE_STYLES: Record<QuickAction["tone"], { icon: string; badge: string; ri
   primary: { icon: "text-primary",                    badge: "bg-primary text-primary-foreground",                     ring: "hover:bg-primary/10" },
 };
 
-const formatCount = (n: number) => (n > 999 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
+const formatCount = (n: number) => (n > 99 ? "99+" : String(n));
+
+function useLiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      const t = setInterval(() => setNow(new Date()), 1000);
+      return () => clearInterval(t);
+    }, []);
+  }
+  return now;
+}
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -44,6 +56,9 @@ export function AppHeader() {
   const [togglesOpen, setTogglesOpen] = useState(false);
 
   const companyName = (company as any)?.companies?.name ?? "CareAdmin";
+  const now = useLiveClock();
+  const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
 
   const handleLogout = async () => {
     try {
@@ -81,6 +96,12 @@ export function AppHeader() {
       <div className="flex items-center gap-1 md:gap-1.5">
         {isEnabled("notifications") && (
           <TooltipProvider delayDuration={120}>
+            <div className="hidden md:flex items-center gap-2 mr-1 pr-3 border-r border-border tabular-nums">
+              <div className="flex flex-col leading-none">
+                <span className="text-[11px] font-medium text-muted-foreground">{dateStr}</span>
+                <span className="text-sm font-bold text-foreground tracking-tight mt-0.5">{timeStr}</span>
+              </div>
+            </div>
             <div className="hidden sm:flex items-center gap-0.5 mr-1 pr-2 border-r border-border">
               {actions.map((a) => {
                 const Icon = a.icon;
