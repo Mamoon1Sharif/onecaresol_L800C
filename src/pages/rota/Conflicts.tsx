@@ -62,42 +62,7 @@ function fmtDate(d: Date) {
 }
 
 function makeRows(careReceivers: any[]) {
-  const today = new Date();
-  const pool = careReceivers.length > 0
-    ? careReceivers
-    : [{ id: "", name: "—", address: "" }];
-  const mk = (i: number) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + (i % 14) + 1);
-    const isCancelled = i === 3 || i === 6;
-    const startH = 7 + (i % 8);
-    const startM = i % 2 === 0 ? 0 : 30;
-    const durMin = [30, 45, 60, 15][i % 4];
-    const endTotal = startH * 60 + startM + durMin;
-    const endH = Math.floor(endTotal / 60);
-    const endM = endTotal % 60;
-    const fmt = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    const cr = pool[i % pool.length];
-    const label = cr.address ? `${cr.name} - ${cr.address}` : cr.name;
-    return {
-      id: `cf-${i}`,
-      ref: String(147039184 + i * 137),
-      date: fmtDate(d),
-      status: isCancelled ? "Cancelled" : "Due",
-      isCancelled,
-      serviceUser: label,
-      receiverId: cr.id,
-      start: fmt(startH, startM),
-      end: fmt(endH, endM),
-      duration: fmt(Math.floor(durMin / 60), durMin % 60),
-      teamMember: "Unallocated",
-      serviceCall: CALL_TYPES[i % CALL_TYPES.length],
-      week: i % 9 === 7 ? "All Weeks" : "Week 2",
-      weekNum: 18,
-    };
-  };
-  const count = Math.max(26, pool.length);
-  return Array.from({ length: count }, (_, i) => mk(i));
+  return buildUnassignedShifts(careReceivers);
 }
 
 const Conflicts = () => {
