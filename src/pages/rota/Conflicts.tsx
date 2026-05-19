@@ -294,17 +294,19 @@ const Conflicts = () => {
                               if (isCancelled) {
                                 setCancelledDetail(r);
                               } else {
-                                setOpenShift({
+                                const qs = new URLSearchParams({
                                   ref: r.ref,
                                   date: r.date,
                                   start: r.start,
                                   end: r.end,
                                   client: r.serviceUser,
                                   staff: r.teamMember,
-                                  serviceCall: r.serviceCall,
+                                  serviceCall: r.serviceCall ?? "",
                                   schedHrs: r.duration,
                                   clockHrs: "00:00",
+                                  from: "conflicts",
                                 });
+                                nav(`/rota/live-single?${qs.toString()}`);
                               }
                             }}
                           >{r.ref}</button>
