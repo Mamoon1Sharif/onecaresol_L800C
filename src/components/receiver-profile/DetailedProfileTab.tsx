@@ -1,12 +1,14 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -14,23 +16,28 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useUpdateCareReceiver, useCareGivers } from "@/hooks/use-care-data";
+import { EditableField } from "@/components/caregiver-profile/EditableField";
 import { toast } from "sonner";
 import {
-  User as UserIcon, Stethoscope, Pill, Pencil, Plus, Star,
-  GraduationCap, ShieldAlert, Link2, History as HistoryIcon, Trash2,
+  User, MapPin, Phone, Mail, Home, Heart, Hash, Calendar,
+  Briefcase, Stethoscope, Pill, KeyRound, ShieldAlert, GraduationCap,
+  Star, Plus, Pencil, Trash2, Clock, Activity, StickyNote, UserCog,
 } from "lucide-react";
+import {
+  TITLE_OPTIONS, SUFFIX_OPTIONS, SEX_OPTIONS, GENDER_OPTIONS,
+  SEXUAL_ORIENTATION_OPTIONS, ETHNICITY_OPTIONS, MARITAL_STATUS_OPTIONS,
+  RELIGION_OPTIONS, RELATIONSHIP_OPTIONS,
+} from "@/lib/profile-options";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CareReceiver = Tables<"care_receivers">;
 
 /* ------------------------- helpers ------------------------- */
-
 function todayIsoDate() {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
 }
-
 function isActiveDnarSetting(row: any, today = todayIsoDate()) {
   return (
     row.status?.toLowerCase() === "active" &&
@@ -38,14 +45,12 @@ function isActiveDnarSetting(row: any, today = todayIsoDate()) {
     (!row.applies_until || row.applies_until >= today)
   );
 }
-
 async function syncCareReceiverDnarFlag(careReceiverId: string) {
   const { data, error } = await supabase
     .from("receiver_dnar_settings" as any)
     .select("status,applies_from,applies_until")
     .eq("care_receiver_id", careReceiverId);
   if (error) throw error;
-
   const hasActiveDnar = ((data ?? []) as any[]).some((row) => isActiveDnarSetting(row));
   const { error: updateError } = await supabase
     .from("care_receivers")
@@ -54,279 +59,223 @@ async function syncCareReceiverDnarFlag(careReceiverId: string) {
   if (updateError) throw updateError;
 }
 
-const Row = ({ label, value, accentValue }: { label: string; value?: any; accentValue?: boolean }) => (
-  <div className="flex flex-wrap items-baseline gap-1.5 py-[3px] text-[12px]">
-    <span className="font-semibold text-foreground">{label}:</span>
-    <span className={accentValue ? "text-destructive" : "text-muted-foreground"}>
-      {value === null || value === undefined || value === "" ? "" : String(value)}
-    </span>
-  </div>
-);
-
-const SectionTitle = ({ children, icon: Icon, className }: { children: React.ReactNode; icon?: any; className?: string }) => (
-  <div className={`flex items-center gap-1.5 text-[13px] font-medium text-primary pb-1.5 mb-2 border-b border-primary/30 ${className ?? ""}`}>
-    {Icon && <Icon className="h-3.5 w-3.5" />}
-    {children}
-  </div>
-);
+function HoursRow({ hours }: { hours: any }) {
+  const h = hours ? (typeof hours === "string" ? JSON.parse(hours) : hours) : {};
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {["week1", "week2", "week3", "week4"].map((w, i) => (
+        <div key={w} className="bg-muted/50 rounded-lg p-3 text-center">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Week {i + 1}</p>
+          <p className="text-lg font-bold text-foreground flex items-center justify-center gap-1.5">
+            <Clock className="h-3.5 w-3.5 text-primary" />
+            {h[w] || "00:00"}
+          </p>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ------------------------- main ------------------------- */
-
 export function ReceiverDetailedProfileTab({ cr }: { cr: CareReceiver }) {
   const updateMutation = useUpdateCareReceiver();
-  const qc = useQueryClient();
-
-  const [editOpen, setEditOpen] = useState(false);
-  const [editAddrOpen, setEditAddrOpen] = useState(false);
-  const [editTagsOpen, setEditTagsOpen] = useState(false);
   const [editHoursOpen, setEditHoursOpen] = useState(false);
-  const [editMedicalOpen, setEditMedicalOpen] = useState(false);
-  const [editServiceDatesOpen, setEditServiceDatesOpen] = useState(false);
 
-  const phone = (cr as any).phone_number ?? null;
-  const phoneOnApp = (cr as any).phone_appears_on_app ?? true;
-
-  const requested = (cr as any).requested_hours
-    ? typeof (cr as any).requested_hours === "string"
-      ? JSON.parse((cr as any).requested_hours)
-      : (cr as any).requested_hours
-    : { week1: "00:00", week2: "00:00", week3: "00:00", week4: "00:00" };
-
-  const save = async (patch: Partial<CareReceiver> & Record<string, any>) => {
+  const save = async (field: string, value: any) => {
     try {
-      await updateMutation.mutateAsync({ id: cr.id, ...patch } as any);
-      toast.success("Saved");
+      const updates: any = { id: cr.id, [field]: value };
+      if (field === "forename") updates.name = `${value} ${(cr as any).surname || ""}`.trim();
+      else if (field === "surname") updates.name = `${(cr as any).forename || ""} ${value}`.trim();
+      await updateMutation.mutateAsync(updates);
+      toast.success(`${field.replace(/_/g, " ")} updated`);
     } catch (e: any) {
       toast.error(e.message ?? "Failed to save");
     }
   };
 
   return (
-    <div className="space-y-4">
-      {/* ============ Service Member Details ============ */}
-      <Card className="overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-            <UserIcon className="h-3.5 w-3.5" /> Service Member Details
+    <div className="space-y-6">
+      {/* Service Member Details */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Service Member Details</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={User} label="Title" value={(cr as any).title} onSave={(v) => save("title", v)} options={TITLE_OPTIONS} />
+            <EditableField icon={User} label="Forename" value={(cr as any).forename ?? cr.name?.split(" ")[0]} onSave={(v) => save("forename", v)} />
+            <EditableField icon={User} label="Surname" value={(cr as any).surname ?? cr.name?.split(" ").slice(1).join(" ")} onSave={(v) => save("surname", v)} />
+            <EditableField icon={User} label="Alias" value={(cr as any).alias} onSave={(v) => save("alias", v)} />
+            <EditableField icon={User} label="Suffix" value={(cr as any).suffix} onSave={(v) => save("suffix", v)} options={SUFFIX_OPTIONS} />
+            <EditableField icon={User} label="Pref" value={(cr as any).pref} onSave={(v) => save("pref", v)} />
+            <EditableField icon={User} label="Sex Assigned At Birth" value={(cr as any).sex_assigned_at_birth} onSave={(v) => save("sex_assigned_at_birth", v)} options={SEX_OPTIONS} />
+            <EditableField icon={User} label="Gender" value={(cr as any).gender} onSave={(v) => save("gender", v)} options={GENDER_OPTIONS} />
+            <EditableField icon={User} label="Sexual Orientation" value={(cr as any).sexual_orientation} onSave={(v) => save("sexual_orientation", v)} options={SEXUAL_ORIENTATION_OPTIONS} />
+            <EditableField icon={Calendar} label="DOB" value={(cr as any).dob} onSave={(v) => save("dob", v)} type="date" />
+            <EditableField icon={User} label="Ethnicity" value={cr.ethnicity} onSave={(v) => save("ethnicity", v)} options={ETHNICITY_OPTIONS} />
+            <EditableField icon={User} label="Marital Status" value={(cr as any).marital_status} onSave={(v) => save("marital_status", v)} options={MARITAL_STATUS_OPTIONS} />
+            <EditableField icon={User} label="Religion" value={(cr as any).religion} onSave={(v) => save("religion", v)} options={RELIGION_OPTIONS} />
+            <EditableField icon={Hash} label="NI Number" value={(cr as any).ni_number} onSave={(v) => save("ni_number", v)} />
+            <EditableField icon={Hash} label="NHS Number" value={(cr as any).nhs_number} onSave={(v) => save("nhs_number", v)} />
+            <EditableField icon={Hash} label="Authority Ref" value={(cr as any).authority_ref} onSave={(v) => save("authority_ref", v)} />
+            <EditableField icon={Hash} label="Social Services ID" value={(cr as any).social_services_id} onSave={(v) => save("social_services_id", v)} />
+            <EditableField icon={KeyRound} label="Keysafe" value={(cr as any).keysafe} onSave={(v) => save("keysafe", v)} />
+            <EditableField icon={KeyRound} label="Mediverify" value={(cr as any).mediverify} onSave={(v) => save("mediverify", v)} />
+            <EditableField icon={User} label="Preferred Language" value={(cr as any).preferred_language ?? cr.language} onSave={(v) => save("preferred_language", v)} />
+            <EditableField icon={Stethoscope} label="Allergies" value={(cr as any).allergies} onSave={(v) => save("allergies", v)} />
           </div>
-          <div className="flex items-center gap-1.5">
-            <Button size="sm" className="h-7 px-2.5 text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground gap-1" onClick={() => setEditTagsOpen(true)}>
-              <Pencil className="h-3 w-3" /> Edit Tags
-            </Button>
-            <Button size="sm" className="h-7 px-2.5 text-[11px] bg-primary hover:bg-primary/90 text-primary-foreground gap-1" onClick={() => setEditAddrOpen(true)}>
-              <Pencil className="h-3 w-3" /> Edit Address
-            </Button>
-            <Button size="sm" className="h-7 px-2.5 text-[11px] bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={() => setEditOpen(true)}>
-              <Pencil className="h-3 w-3" /> Edit
-            </Button>
-          </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 p-4">
-          {/* User Details */}
-          <div>
-            <SectionTitle>User Details</SectionTitle>
-            <Row label="Sub Status" value={(cr as any).sub_status ?? "None"} />
-            <Row label="Title" value={(cr as any).title} />
-            <Row label="Forename" value={(cr as any).forename ?? cr.name?.split(" ")[0]} />
-            <Row label="Surname" value={(cr as any).surname ?? cr.name?.split(" ").slice(1).join(" ")} />
-            <Row label="Alias" value={(cr as any).alias} />
-            <Row label="Suffix" value={(cr as any).suffix} />
-            <Row label="Pref" value={(cr as any).pref} />
-            <Row label="Sex Assigned At Birth" value={(cr as any).sex_assigned_at_birth} />
-            <Row label="Gender" value={(cr as any).gender ?? "N/A"} />
-            <Row label="Sexual Orientation" value={(cr as any).sexual_orientation ?? "N/A"} />
-            <Row label="DOB" value={(cr as any).dob} />
-            <Row label="Ethnicity" value={cr.ethnicity} />
-            <Row label="Marital Status" value={(cr as any).marital_status} />
-            <Row label="Religion" value={(cr as any).religion} />
-            <Row label="NI Number" value={(cr as any).ni_number} />
-            <Row label="Authority Ref" value={(cr as any).authority_ref} />
-            <Row label="Social Services ID" value={(cr as any).social_services_id} />
-            <Row label="CM2000 Link" value={(cr as any).cm2000_link ?? "No"} />
-            <Row label="Keysafe" value={(cr as any).keysafe} />
-            <Row label="Mediverify" value={(cr as any).mediverify} />
-            <Row label="Preferred Language" value={(cr as any).preferred_language ?? cr.language ?? "English"} />
-          </div>
-
-          {/* Contact Details + Preferred Hours */}
-          <div className="space-y-5">
-            <div>
-              <SectionTitle>Contact Details</SectionTitle>
-              <div className="flex flex-wrap items-baseline gap-1.5 py-[3px] text-[12px]">
-                <span className="font-semibold text-foreground">Phone Number</span>
-                {phone && (
-                  <span className={phoneOnApp ? "text-destructive text-[11px]" : "text-muted-foreground text-[11px]"}>
-                    ({phoneOnApp ? "Appears on the App" : "Hidden from App"})
-                  </span>
-                )}
-                <span className="text-muted-foreground">: {phone}</span>
+      {/* Contact Details */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Contact Details</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={Phone} label="Phone Number" value={(cr as any).phone_number} onSave={(v) => save("phone_number", v)} type="tel" />
+            <div className="flex items-center gap-3 py-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Phone Appears On App</p>
+                <Switch checked={(cr as any).phone_appears_on_app ?? true} onCheckedChange={(v) => save("phone_appears_on_app", v)} />
               </div>
-              <Row label="Mobile Num 1" value={(cr as any).mobile_num_1} />
-              <Row label="Mobile Num 2" value={(cr as any).mobile_num_2} />
-              <Row label="Email 1" value={(cr as any).email_1} />
-              <Row label="Email 2" value={(cr as any).email_2} />
-            </div>
-
-            <div>
-              <SectionTitle>Preferred Hours</SectionTitle>
-              <Row label="Preferred Hours" value={cr.preferred_hours} />
             </div>
           </div>
-
-          {/* Account Details */}
-          <div>
-            <SectionTitle>Account Details</SectionTitle>
-            <Row label="Reference No" value={(cr as any).reference_no} />
-            <Row label="Carer Pref" value={(cr as any).carer_pref ?? cr.preference ?? "Either"} />
-            <Row label="Risk Rating" value={cr.risk_rating ?? "None"} />
-            <Row label="Risk Rating Description" value={(cr as any).risk_rating_description ?? "None"} />
-            <Row label="Under Regulated Activity" value={(cr as any).under_regulated_activity ? "Yes" : "No"} />
-            <Row label="NPC number" value={(cr as any).npc_number} />
-            <Row label="Contract Type" value={(cr as any).contract_type ?? "Scheduled"} />
-            <Row label="Area Name" value={(cr as any).area_name} />
-          </div>
-        </div>
-
-        {/* NOK / Doctor / Pharmacy row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-x-6 gap-y-4 px-4 pb-4">
-          <div>
-            <SectionTitle>Next Of Kin</SectionTitle>
-            <Row label="Name" value={cr.next_of_kin} />
-            <Row label="Address" value={cr.next_of_kin_address} />
-            <Row label="Tel" value={cr.next_of_kin_phone} />
-            <Row label="Tel 2" value={(cr as any).next_of_kin_phone_2} />
-            <Row label="Mobile" value={(cr as any).next_of_kin_mobile} />
-            <Row label="Email" value={cr.next_of_kin_email} />
-            <Row label="Notes" value={(cr as any).next_of_kin_notes} />
-          </div>
-          <div>
-            <SectionTitle icon={Stethoscope}>Doctor</SectionTitle>
-            <Row label="Name" value={cr.doctor_name} />
-            <Row label="Address" value={cr.doctor_address} />
-            <Row label="Phone Number 1" value={cr.doctor_phone} />
-            <Row label="Email" value={cr.doctor_contact} />
-          </div>
-          <div>
-            <SectionTitle icon={Pill}>Pharmacy</SectionTitle>
-            <Row label="Name" value={cr.pharmacy_name} />
-            <Row label="Address" value={cr.pharmacy_address} />
-            <Row label="Phone Number 1" value={cr.pharmacy_phone} />
-            <Row label="Email" value={(cr as any).pharmacy_email} />
-          </div>
-        </div>
+        </CardContent>
       </Card>
 
-      {/* ============ Onboarding ============ */}
-      <OnboardingStrip cr={cr} onSave={(s) => save({ onboarding_status: s } as any)} />
-
-      {/* ============ DNAR + Medical Login ============ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
-        <DnarSettingsCard careReceiverId={cr.id} />
-        <MedicalLoginCard cr={cr} onEdit={() => setEditMedicalOpen(true)} />
-      </div>
-
-      {/* ============ Qualifications + Service Dates ============ */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
-        <QualificationRequirementsCard careReceiverId={cr.id} />
-        <ServiceDatesCard cr={cr} onEdit={() => setEditServiceDatesOpen(true)} />
-      </div>
-
-      {/* ============ Programs of Care ============ */}
-      <Card className="overflow-hidden border-t-2 border-t-primary/40">
-        <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-            <Link2 className="h-3.5 w-3.5 text-primary" /> Programs of Care
+      {/* Address */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Address</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={Home} label="Address" value={cr.address} onSave={(v) => save("address", v)} />
           </div>
-          <Button size="sm" className="h-7 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1">
-            <Plus className="h-3 w-3" /> Link Program of Care
-          </Button>
-        </div>
-        <div className="px-4 py-3 text-[12px] text-muted-foreground">
-          This feature allows you to set a program of care for a client. This can be useful for grouping your clients by the type of care their are receiving. You may only have one active at any one time.
-        </div>
+        </CardContent>
       </Card>
 
-      {/* ============ User Preferences ============ */}
+      {/* Account Details */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Account Details</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={Hash} label="Reference No" value={(cr as any).reference_no} onSave={(v) => save("reference_no", v)} />
+            <EditableField icon={UserCog} label="Sub Status" value={(cr as any).sub_status} onSave={(v) => save("sub_status", v)} />
+            <EditableField icon={UserCog} label="Account Status" value={(cr as any).account_status} onSave={(v) => save("account_status", v)} options={["Active", "On Hold", "Discharged"]} />
+            <EditableField icon={Calendar} label="Service Start Date" value={(cr as any).service_start_date} onSave={(v) => save("service_start_date", v)} type="date" />
+            <EditableField icon={UserCog} label="Carer Pref" value={(cr as any).carer_pref ?? cr.preference} onSave={(v) => save("carer_pref", v)} options={["Either", "Male", "Female"]} />
+            <EditableField icon={ShieldAlert} label="Risk Rating" value={cr.risk_rating} onSave={(v) => save("risk_rating", v)} options={["None", "Low", "Medium", "High"]} />
+            <EditableField icon={StickyNote} label="Risk Rating Description" value={(cr as any).risk_rating_description} onSave={(v) => save("risk_rating_description", v)} />
+            <EditableField icon={Hash} label="NPC Number" value={(cr as any).npc_number} onSave={(v) => save("npc_number", v)} />
+            <EditableField icon={Briefcase} label="Contract Type" value={(cr as any).contract_type} onSave={(v) => save("contract_type", v)} options={["Scheduled", "Live-In", "Ad-Hoc"]} />
+            <EditableField icon={MapPin} label="Area Name" value={(cr as any).area_name} onSave={(v) => save("area_name", v)} />
+            <EditableField icon={UserCog} label="Onboarding Status" value={(cr as any).onboarding_status} onSave={(v) => save("onboarding_status", v)} options={["None","Pending","In Progress","Awaiting Documents","Complete","On Hold"]} />
+            <div className="flex items-center gap-3 py-2">
+              <Activity className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">Under Regulated Activity</p>
+                <Switch checked={(cr as any).under_regulated_activity ?? false} onCheckedChange={(v) => save("under_regulated_activity", v)} />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 py-2">
+              <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">DNACPR</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Switch checked={cr.dnacpr ?? false} onCheckedChange={(v) => save("dnacpr", v)} />
+                  <Badge variant={cr.dnacpr ? "destructive" : "secondary"} className="text-xs">
+                    {cr.dnacpr ? "Active" : "Not Active"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Next Of Kin */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Next Of Kin</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={User} label="Name" value={cr.next_of_kin} onSave={(v) => save("next_of_kin", v)} />
+            <EditableField icon={Home} label="Address" value={cr.next_of_kin_address} onSave={(v) => save("next_of_kin_address", v)} />
+            <EditableField icon={Phone} label="Tel" value={cr.next_of_kin_phone} onSave={(v) => save("next_of_kin_phone", v)} type="tel" />
+            <EditableField icon={Mail} label="Email" value={cr.next_of_kin_email} onSave={(v) => save("next_of_kin_email", v)} type="email" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Doctor */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Doctor</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={Stethoscope} label="Name" value={cr.doctor_name} onSave={(v) => save("doctor_name", v)} />
+            <EditableField icon={Home} label="Address" value={cr.doctor_address} onSave={(v) => save("doctor_address", v)} />
+            <EditableField icon={Phone} label="Phone" value={cr.doctor_phone} onSave={(v) => save("doctor_phone", v)} type="tel" />
+            <EditableField icon={Mail} label="Email" value={cr.doctor_contact} onSave={(v) => save("doctor_contact", v)} type="email" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pharmacy */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Pharmacy</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={Pill} label="Name" value={cr.pharmacy_name} onSave={(v) => save("pharmacy_name", v)} />
+            <EditableField icon={Home} label="Address" value={cr.pharmacy_address} onSave={(v) => save("pharmacy_address", v)} />
+            <EditableField icon={Phone} label="Phone" value={cr.pharmacy_phone} onSave={(v) => save("pharmacy_phone", v)} type="tel" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Medical Login Details */}
+      <Card className="border border-border">
+        <CardContent className="p-6">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Medical Login Details</h3>
+          <Separator className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
+            <EditableField icon={Hash} label="Company Number" value={(cr as any).medical_company_number} onSave={(v) => save("medical_company_number", v)} />
+            <EditableField icon={Hash} label="Service Member Number" value={(cr as any).medical_service_user_number} onSave={(v) => save("medical_service_user_number", v)} />
+            <EditableField icon={KeyRound} label="Password" value={(cr as any).medical_password} onSave={(v) => save("medical_password", v)} />
+          </div>
+          <p className="text-[11px] text-destructive italic pt-3">This login will display all Service Member medical info and is intended for doctor/paramedic use.</p>
+        </CardContent>
+      </Card>
+
+      {/* DNAR settings (CRUD) */}
+      <DnarSettingsCard careReceiverId={cr.id} />
+
+      {/* Qualification Requirements (CRUD) */}
+      <QualificationRequirementsCard careReceiverId={cr.id} />
+
+      {/* User Preferences */}
       <UserPreferencesCard careReceiverId={cr.id} careReceiverName={cr.name} />
 
-      {/* ============ Requested Hours ============ */}
-      <Card className="overflow-hidden border-t-2 border-t-primary/40">
-        <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-            <HistoryIcon className="h-3.5 w-3.5 text-primary" /> Requested Hours
-          </div>
-          <Button size="sm" className="h-7 px-2.5 text-[11px] bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={() => setEditHoursOpen(true)}>
-            <Pencil className="h-3 w-3" /> Edit weekly hours
+      {/* Requested Hours */}
+      <Card className="border border-border overflow-hidden">
+        <div className="bg-gradient-to-r from-primary/10 to-transparent px-6 py-3 flex items-center justify-between">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+            <Clock className="h-4 w-4" /> Requested Hours
+          </h3>
+          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => setEditHoursOpen(true)}>
+            <Pencil className="h-3 w-3" /> Edit
           </Button>
         </div>
-        <div className="grid grid-cols-4 px-4 py-3 text-[12px]">
-          {(["week1","week2","week3","week4"] as const).map((w, i) => (
-            <div key={w}>
-              <span className="font-semibold text-foreground">Week {i + 1}: </span>
-              <span className="text-muted-foreground">{requested[w] || "00:00"}</span>
-            </div>
-          ))}
-        </div>
+        <CardContent className="p-5">
+          <HoursRow hours={(cr as any).requested_hours} />
+        </CardContent>
       </Card>
 
-      {/* ============ Dialogs ============ */}
-      <EditDetailsDialog open={editOpen} onOpenChange={setEditOpen} cr={cr} onSave={save} />
-      <EditAddressDialog open={editAddrOpen} onOpenChange={setEditAddrOpen} cr={cr} onSave={save} />
-      <EditTagsDialog open={editTagsOpen} onOpenChange={setEditTagsOpen} cr={cr} onSave={save} />
-      <EditHoursDialog open={editHoursOpen} onOpenChange={setEditHoursOpen} cr={cr} onSave={save} />
-      <EditMedicalDialog open={editMedicalOpen} onOpenChange={setEditMedicalOpen} cr={cr} onSave={save} />
-      <EditServiceDatesDialog open={editServiceDatesOpen} onOpenChange={setEditServiceDatesOpen} cr={cr} onSave={save} />
+      <EditHoursDialog open={editHoursOpen} onOpenChange={setEditHoursOpen} cr={cr} onSave={(v) => save("requested_hours", v)} />
     </div>
-  );
-}
-
-/* ============================================================
-   Onboarding strip
-============================================================ */
-function OnboardingStrip({ cr, onSave }: { cr: CareReceiver; onSave: (s: string) => void }) {
-  const status = (cr as any).onboarding_status ?? "None";
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(status);
-  return (
-    <Card className="overflow-hidden border-t-2 border-t-primary/40">
-      <div className="px-4 py-2.5 flex items-center justify-between">
-        <div className="text-[13px]">
-          <span className="font-semibold text-emerald-700 dark:text-emerald-500">Onboarding</span>
-          <span className="text-muted-foreground"> current status: </span>
-          <span className="italic text-muted-foreground">{status}</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Button size="sm" className="h-7 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white">Link Actions</Button>
-          <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px]">View History</Button>
-        </div>
-      </div>
-      <div className="px-4 py-2.5 border-t border-border flex items-center justify-between">
-        <Button size="sm" variant="outline" className="h-7 px-2.5 text-[11px]">View Completed Actions</Button>
-        <Button size="sm" className="h-7 px-2.5 text-[11px] bg-amber-500 hover:bg-amber-600 text-white" onClick={() => { setDraft(status); setOpen(true); }}>
-          Update Status
-        </Button>
-      </div>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Update Onboarding Status</DialogTitle></DialogHeader>
-          <div className="space-y-2">
-            <Label className="text-xs">Status</Label>
-            <Select value={draft || "None"} onValueChange={setDraft}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {["None","Pending","In Progress","Awaiting Documents","Complete","On Hold"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={() => { onSave(draft); setOpen(false); }}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </Card>
   );
 }
 
@@ -394,22 +343,19 @@ function DnarSettingsCard({ careReceiverId }: { careReceiverId: string }) {
   });
 
   return (
-    <Card className="overflow-hidden border-t-2 border-t-primary/40">
-      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <ShieldAlert className="h-3.5 w-3.5 text-primary" /> Service Member Do Not Attempt Resuscitation (DNAR) Settings
+    <Card className="border border-border">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4" /> DNAR Settings
+          </h3>
+          <Button size="sm" className="h-7 px-2.5 text-[11px] gap-1" onClick={() => { setEditing(null); setDraft({ status: "Active", applies_from: "", applies_until: "", document_ref: "", notes: "" }); setOpen(true); }}>
+            <Plus className="h-3 w-3" /> Add
+          </Button>
         </div>
-        <Button size="sm" className="h-7 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => { setEditing(null); setDraft({ status: "Active", applies_from: "", applies_until: "", document_ref: "", notes: "" }); setOpen(true); }}>
-          <Plus className="h-3 w-3" /> Add
-        </Button>
-      </div>
-      <div className="px-4 py-3 text-[12px] text-muted-foreground">
-        If this Service Member has DNAR (do not attempt resuscitation) in place you can replicate that setting here. This will be shown around the entire system when viewing the service members profile. Please be very careful turning this setting on as getting this wrong is a matter of life and death. The user that turns this on will be clearly logged in the system and may be held accountable. You must put your password in to turn this setting on or off.
-      </div>
-      <div className="px-4 pb-3 space-y-1.5">
-        <p className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground">Below you will find the DNAR history for this service member.</p>
+        <Separator className="mb-4" />
         {rows.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground italic py-2">No DNAR records.</p>
+          <p className="text-[12px] text-muted-foreground italic">No DNAR records.</p>
         ) : (
           <div className="border border-border rounded">
             <div className="grid grid-cols-[1fr_120px_120px_140px_60px] gap-2 px-2 py-1.5 bg-muted/40 text-[11px] font-semibold text-muted-foreground border-b border-border">
@@ -434,7 +380,7 @@ function DnarSettingsCard({ careReceiverId }: { careReceiverId: string }) {
             ))}
           </div>
         )}
-      </div>
+      </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -465,41 +411,6 @@ function DnarSettingsCard({ careReceiverId }: { careReceiverId: string }) {
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => delId && del.mutate(delId)}>Delete</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
-  );
-}
-
-/* ============================================================
-   Medical Login Details
-============================================================ */
-function MedicalLoginCard({ cr, onEdit }: { cr: CareReceiver; onEdit: () => void }) {
-  const [reveal, setReveal] = useState(false);
-  return (
-    <Card className="overflow-hidden border-t-2 border-t-primary/40">
-      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <UserIcon className="h-3.5 w-3.5 text-primary" /> Medical Login Details
-        </div>
-        <Button size="sm" className="h-7 px-2.5 text-[11px] bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={onEdit}>
-          <Pencil className="h-3 w-3" /> Edit
-        </Button>
-      </div>
-      <div className="px-4 py-3 space-y-1">
-        <Row label="Company Number" value={(cr as any).medical_company_number} />
-        <Row label="Service Member Number" value={(cr as any).medical_service_user_number} />
-        <div className="flex flex-wrap items-baseline gap-1.5 py-[3px] text-[12px]">
-          <span className="font-semibold text-foreground">Password:</span>
-          <span className="text-muted-foreground font-mono">
-            {reveal ? (cr as any).medical_password ?? "" : ((cr as any).medical_password ? "•".repeat(Math.min(8, ((cr as any).medical_password as string).length)) : "")}
-          </span>
-          {(cr as any).medical_password && (
-            <button type="button" onClick={() => setReveal(!reveal)} className="text-primary text-[11px] underline-offset-2 hover:underline">
-              {reveal ? "hide" : "show"}
-            </button>
-          )}
-        </div>
-        <p className="text-[11px] text-destructive italic pt-2">This login will display all Service Member medical info and is intended for doctor/paramedic use</p>
-      </div>
     </Card>
   );
 }
@@ -545,18 +456,19 @@ function QualificationRequirementsCard({ careReceiverId }: { careReceiverId: str
   });
 
   return (
-    <Card className="overflow-hidden border-t-2 border-t-primary/40">
-      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <GraduationCap className="h-3.5 w-3.5 text-primary" /> Service Member Qualification Requirements
+    <Card className="border border-border">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" /> Qualification Requirements
+          </h3>
+          <Button size="sm" className="h-7 px-2.5 text-[11px] gap-1" onClick={() => { setEditing(null); setDraft({ qualification: "", mandatory: true, notes: "" }); setOpen(true); }}>
+            <Plus className="h-3 w-3" /> Add
+          </Button>
         </div>
-        <Button size="sm" className="h-7 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => { setEditing(null); setDraft({ qualification: "", mandatory: true, notes: "" }); setOpen(true); }}>
-          <Plus className="h-3 w-3" /> Add
-        </Button>
-      </div>
-      <div className="px-4 py-3">
+        <Separator className="mb-4" />
         {rows.length === 0 ? (
-          <p className="text-[12px] text-muted-foreground italic py-2">No qualification requirements set.</p>
+          <p className="text-[12px] text-muted-foreground italic">No qualification requirements set.</p>
         ) : (
           <div className="border border-border rounded">
             <div className="grid grid-cols-[1fr_120px_1fr_60px] gap-2 px-2 py-1.5 bg-muted/40 text-[11px] font-semibold text-muted-foreground border-b border-border">
@@ -575,7 +487,7 @@ function QualificationRequirementsCard({ careReceiverId }: { careReceiverId: str
             ))}
           </div>
         )}
-      </div>
+      </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -595,27 +507,6 @@ function QualificationRequirementsCard({ careReceiverId }: { careReceiverId: str
           <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => delId && del.mutate(delId)}>Delete</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Card>
-  );
-}
-
-/* ============================================================
-   Service Dates
-============================================================ */
-function ServiceDatesCard({ cr, onEdit }: { cr: CareReceiver; onEdit: () => void }) {
-  return (
-    <Card className="overflow-hidden border-t-2 border-t-primary/40">
-      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">Service Dates</div>
-        <Button size="sm" className="h-7 px-2.5 text-[11px] bg-amber-500 hover:bg-amber-600 text-white gap-1" onClick={onEdit}>
-          <Pencil className="h-3 w-3" /> Edit
-        </Button>
-      </div>
-      <div className="px-4 py-3 space-y-1">
-        <Row label="Start Date" value={(cr as any).service_start_date} />
-        <Row label="Account Status" value={(cr as any).account_status ?? "Active"} />
-        <p className="text-[11px] text-muted-foreground italic pt-2">To change the status of this account, click edit above</p>
-      </div>
     </Card>
   );
 }
@@ -673,58 +564,52 @@ function UserPreferencesCard({ careReceiverId, careReceiverName }: { careReceive
   });
 
   return (
-    <Card className="overflow-hidden border-t-2 border-t-primary/40">
-      <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-          <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" /> User Preferences
+    <Card className="border border-border">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-sm font-bold uppercase tracking-widest text-primary flex items-center gap-2">
+            <Star className="h-4 w-4 text-amber-500 fill-amber-500" /> User Preferences
+          </h3>
+          <Button size="sm" className="h-7 px-2.5 text-[11px] gap-1" onClick={() => { setDraft({ care_giver_id: "", rating: 0, description: "" }); setOpen(true); }}>
+            <Plus className="h-3 w-3" /> Add Preference
+          </Button>
         </div>
-        <Button size="sm" className="h-7 px-2.5 text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white gap-1" onClick={() => { setDraft({ care_giver_id: "", rating: 0, description: "" }); setOpen(true); }}>
-          <Plus className="h-3 w-3" /> Add Preference
-        </Button>
-      </div>
-      <div className="px-4 py-3 text-[12px] text-amber-700 dark:text-amber-500 space-y-1">
-        <p>You have the setting turned on for locking care giver pref. This means if this service member access a care giver less than 3, that care giver will not be allowed to be assigned to the call. This is something to be mindful of when using the bulk actions as there will be no warning the care giver has not been assigned in some instances, you need to double check. If there is no preference set between the service member and the care giver, the care giver will be allowed to be assigned and a default rating will be created between the two accounts at the min star level set in settings.</p>
-        <p className="pt-2">Preferences show the care giver→service member/service member→care giver preference for the corresponding user to aid judgment when assigning care giver to rotas. To edit a users preference click on their name in the table. Hovering over the stars will display the description for that users preference.</p>
-      </div>
+        <Separator className="mb-4" />
 
-      <div className="px-4 pb-2 flex items-center justify-end gap-2">
-        <Label className="text-xs">Search:</Label>
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} className="h-7 w-48 text-xs" />
-      </div>
+        <div className="flex items-center justify-end gap-2 pb-2">
+          <Label className="text-xs">Search:</Label>
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} className="h-7 w-48 text-xs" />
+        </div>
 
-      <div className="px-4 pb-4 overflow-x-auto">
-        <table className="w-full text-[12px] border border-border rounded overflow-hidden">
-          <thead className="bg-cyan-500 text-white">
-            <tr>
-              <th className="w-10 px-2 py-2"></th>
-              <th className="text-left px-3 py-2 font-semibold">Service Member Name</th>
-              <th className="text-center px-3 py-2 font-semibold">→</th>
-              <th className="text-left px-3 py-2 font-semibold bg-violet-400">Preference</th>
-              <th className="text-left px-3 py-2 font-semibold bg-violet-400">Care Giver Name</th>
-              <th className="text-center px-3 py-2 font-semibold bg-violet-400">→</th>
-              <th className="text-left px-3 py-2 font-semibold bg-violet-400">Preference</th>
-              <th className="w-12 px-2 py-2 bg-violet-400"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {enriched.length === 0 ? (
-              <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground italic">No preferences set</td></tr>
-            ) : enriched.map((r) => (
-              <tr key={r.id} className="border-t border-border hover:bg-muted/20">
-                <td className="px-2 py-2"><Pencil className="h-3 w-3 text-muted-foreground" /></td>
-                <td className="px-3 py-2 text-foreground bg-amber-500/10">{careReceiverName}</td>
-                <td className="px-3 py-2 text-center text-cyan-600">→</td>
-                <td className="px-3 py-2 bg-amber-500/10"><StarRating value={r.rating} onChange={(v) => updateRating.mutate({ id: r.id, rating: v })} title={r.description ?? ""} /></td>
-                <td className="px-3 py-2 text-primary">{r.caregiver_name}</td>
-                <td className="px-3 py-2 text-center text-violet-600">→</td>
-                <td className="px-3 py-2 text-muted-foreground italic">{r.description || "No Preference"}</td>
-                <td className="px-2 py-2"><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => setDelId(r.id)}><Trash2 className="h-3 w-3" /></Button></td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12px] border border-border rounded overflow-hidden">
+            <thead className="bg-muted/40 text-foreground">
+              <tr>
+                <th className="w-10 px-2 py-2"></th>
+                <th className="text-left px-3 py-2 font-semibold">Service Member</th>
+                <th className="text-left px-3 py-2 font-semibold">Rating</th>
+                <th className="text-left px-3 py-2 font-semibold">Care Giver</th>
+                <th className="text-left px-3 py-2 font-semibold">Description</th>
+                <th className="w-12 px-2 py-2"></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="text-[11px] text-muted-foreground pt-2">Showing {enriched.length === 0 ? 0 : 1} to {enriched.length} of {enriched.length} entries</p>
-      </div>
+            </thead>
+            <tbody>
+              {enriched.length === 0 ? (
+                <tr><td colSpan={6} className="px-3 py-6 text-center text-muted-foreground italic">No preferences set</td></tr>
+              ) : enriched.map((r) => (
+                <tr key={r.id} className="border-t border-border hover:bg-muted/20">
+                  <td className="px-2 py-2"><Pencil className="h-3 w-3 text-muted-foreground" /></td>
+                  <td className="px-3 py-2 text-foreground">{careReceiverName}</td>
+                  <td className="px-3 py-2"><StarRating value={r.rating} onChange={(v) => updateRating.mutate({ id: r.id, rating: v })} title={r.description ?? ""} /></td>
+                  <td className="px-3 py-2 text-primary">{r.caregiver_name}</td>
+                  <td className="px-3 py-2 text-muted-foreground italic">{r.description || "No Preference"}</td>
+                  <td className="px-2 py-2"><Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive" onClick={() => setDelId(r.id)}><Trash2 className="h-3 w-3" /></Button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
@@ -771,98 +656,8 @@ function StarRating({ value, onChange, title, large }: { value: number; onChange
 }
 
 /* ============================================================
-   Edit Dialogs
+   Edit Hours Dialog
 ============================================================ */
-function EditDetailsDialog({ open, onOpenChange, cr, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; cr: CareReceiver; onSave: (p: any) => void }) {
-  const [d, setD] = useState<any>({});
-  useMemo(() => { if (open) setD({ ...cr }); }, [open, cr]);
-  const set = (k: string, v: any) => setD((prev: any) => ({ ...prev, [k]: v }));
-
-  const fields: { k: string; label: string; type?: string }[] = [
-    { k: "title", label: "Title" }, { k: "forename", label: "Forename" }, { k: "surname", label: "Surname" },
-    { k: "alias", label: "Alias" }, { k: "suffix", label: "Suffix" }, { k: "pref", label: "Pref" },
-    { k: "sex_assigned_at_birth", label: "Sex Assigned At Birth" }, { k: "gender", label: "Gender" }, { k: "sexual_orientation", label: "Sexual Orientation" },
-    { k: "dob", label: "DOB", type: "date" }, { k: "ethnicity", label: "Ethnicity" }, { k: "marital_status", label: "Marital Status" },
-    { k: "religion", label: "Religion" }, { k: "ni_number", label: "NI Number" }, { k: "authority_ref", label: "Authority Ref" },
-    { k: "social_services_id", label: "Social Services ID" }, { k: "cm2000_link", label: "CM2000 Link" }, { k: "keysafe", label: "Keysafe" },
-    { k: "mediverify", label: "Mediverify" }, { k: "preferred_language", label: "Preferred Language" },
-    { k: "phone_number", label: "Phone Number" }, { k: "mobile_num_1", label: "Mobile Num 1" }, { k: "mobile_num_2", label: "Mobile Num 2" },
-    { k: "email_1", label: "Email 1", type: "email" }, { k: "email_2", label: "Email 2", type: "email" },
-    { k: "preferred_hours", label: "Preferred Hours" },
-    { k: "reference_no", label: "Reference No" }, { k: "carer_pref", label: "Carer Pref" }, { k: "risk_rating", label: "Risk Rating" },
-    { k: "risk_rating_description", label: "Risk Rating Description" }, { k: "npc_number", label: "NPC number" }, { k: "contract_type", label: "Contract Type" },
-    { k: "area_name", label: "Area Name" }, { k: "sub_status", label: "Sub Status" },
-  ];
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Edit Service Member Details</DialogTitle></DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
-          {fields.map(f => (
-            <div key={f.k} className="space-y-1">
-              <Label className="text-xs">{f.label}</Label>
-              <Input type={f.type ?? "text"} value={d[f.k] ?? ""} onChange={(e) => set(f.k, e.target.value)} className="h-8 text-xs" />
-            </div>
-          ))}
-          <div className="col-span-2 flex items-center gap-2 pt-1">
-            <Switch checked={!!d.phone_appears_on_app} onCheckedChange={(v) => set("phone_appears_on_app", v)} />
-            <Label className="text-xs">Phone appears on App</Label>
-          </div>
-          <div className="col-span-2 flex items-center gap-2">
-            <Switch checked={!!d.under_regulated_activity} onCheckedChange={(v) => set("under_regulated_activity", v)} />
-            <Label className="text-xs">Under Regulated Activity</Label>
-          </div>
-          <div className="col-span-2 flex items-center gap-2">
-            <Switch checked={!!d.dnacpr} onCheckedChange={(v) => set("dnacpr", v)} />
-            <Label className="text-xs">DNACPR</Label>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => { onSave(d); onOpenChange(false); }}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditAddressDialog({ open, onOpenChange, cr, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; cr: CareReceiver; onSave: (p: any) => void }) {
-  const [v, setV] = useState({ address: cr.address ?? "", next_of_kin_address: cr.next_of_kin_address ?? "", doctor_address: cr.doctor_address ?? "", pharmacy_address: cr.pharmacy_address ?? "" });
-  useMemo(() => { if (open) setV({ address: cr.address ?? "", next_of_kin_address: cr.next_of_kin_address ?? "", doctor_address: cr.doctor_address ?? "", pharmacy_address: cr.pharmacy_address ?? "" }); }, [open, cr]);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader><DialogTitle>Edit Addresses</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1"><Label className="text-xs">Service Member Address</Label><Textarea rows={2} value={v.address} onChange={e => setV({ ...v, address: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Next of Kin Address</Label><Textarea rows={2} value={v.next_of_kin_address} onChange={e => setV({ ...v, next_of_kin_address: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Doctor Address</Label><Textarea rows={2} value={v.doctor_address} onChange={e => setV({ ...v, doctor_address: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Pharmacy Address</Label><Textarea rows={2} value={v.pharmacy_address} onChange={e => setV({ ...v, pharmacy_address: e.target.value })} /></div>
-        </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onSave(v); onOpenChange(false); }}>Save</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditTagsDialog({ open, onOpenChange, cr, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; cr: CareReceiver; onSave: (p: any) => void }) {
-  const [text, setText] = useState(((cr as any).tags ?? []).join(", "));
-  useMemo(() => { if (open) setText(((cr as any).tags ?? []).join(", ")); }, [open, cr]);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Edit Tags</DialogTitle></DialogHeader>
-        <div className="space-y-2">
-          <Label className="text-xs">Tags (comma separated)</Label>
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Care Service Contract Reaffirmed, Service Member pack issued, ..." />
-        </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onSave({ tags: text.split(",").map(s => s.trim()).filter(Boolean) }); onOpenChange(false); }}>Save</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function EditHoursDialog({ open, onOpenChange, cr, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; cr: CareReceiver; onSave: (p: any) => void }) {
   const initial = (cr as any).requested_hours
     ? typeof (cr as any).requested_hours === "string" ? JSON.parse((cr as any).requested_hours) : (cr as any).requested_hours
@@ -878,47 +673,7 @@ function EditHoursDialog({ open, onOpenChange, cr, onSave }: { open: boolean; on
             <div key={w} className="space-y-1"><Label className="text-xs">Week {i+1}</Label><Input value={h[w] ?? "00:00"} onChange={(e) => setH({ ...h, [w]: e.target.value })} placeholder="00:00" /></div>
           ))}
         </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onSave({ requested_hours: h }); onOpenChange(false); }}>Save</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditMedicalDialog({ open, onOpenChange, cr, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; cr: CareReceiver; onSave: (p: any) => void }) {
-  const [v, setV] = useState({ medical_company_number: (cr as any).medical_company_number ?? "", medical_service_user_number: (cr as any).medical_service_user_number ?? "", medical_password: (cr as any).medical_password ?? "" });
-  useMemo(() => { if (open) setV({ medical_company_number: (cr as any).medical_company_number ?? "", medical_service_user_number: (cr as any).medical_service_user_number ?? "", medical_password: (cr as any).medical_password ?? "" }); }, [open, cr]);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Edit Medical Login Details</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1"><Label className="text-xs">Company Number</Label><Input value={v.medical_company_number} onChange={(e) => setV({ ...v, medical_company_number: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Service Member Number</Label><Input value={v.medical_service_user_number} onChange={(e) => setV({ ...v, medical_service_user_number: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Password</Label><Input type="password" value={v.medical_password} onChange={(e) => setV({ ...v, medical_password: e.target.value })} /></div>
-        </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onSave(v); onOpenChange(false); }}>Save</Button></DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditServiceDatesDialog({ open, onOpenChange, cr, onSave }: { open: boolean; onOpenChange: (o: boolean) => void; cr: CareReceiver; onSave: (p: any) => void }) {
-  const [v, setV] = useState({ service_start_date: (cr as any).service_start_date ?? "", account_status: (cr as any).account_status ?? "Active" });
-  useMemo(() => { if (open) setV({ service_start_date: (cr as any).service_start_date ?? "", account_status: (cr as any).account_status ?? "Active" }); }, [open, cr]);
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Edit Service Dates</DialogTitle></DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1"><Label className="text-xs">Start Date</Label><Input type="date" value={v.service_start_date} onChange={(e) => setV({ ...v, service_start_date: e.target.value })} /></div>
-          <div className="space-y-1"><Label className="text-xs">Account Status</Label>
-            <Select value={v.account_status} onValueChange={(s) => setV({ ...v, account_status: s })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{["Active","On Hold","Discharged"].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-        </div>
-        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onSave(v); onOpenChange(false); }}>Save</Button></DialogFooter>
+        <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button><Button onClick={() => { onSave(h); onOpenChange(false); }}>Save</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   );
