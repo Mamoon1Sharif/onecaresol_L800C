@@ -1068,8 +1068,7 @@ function StaffAvailabilitySection({
     match: [100, 100, 100, 92, 88, 100, 76, 100, 95][i % 9],
   }));
 
-  const initialSel = list.find((s) => s.name === currentStaffName)?.id ?? list[0]?.id ?? "";
-  const [selectedId, setSelectedId] = useState<string>(initialSel);
+  const [selectedId, setSelectedId] = useState<string>("");
   const [search, setSearch] = useState("");
   const [tableSearch, setTableSearch] = useState("");
 
