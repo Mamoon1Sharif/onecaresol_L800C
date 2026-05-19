@@ -206,13 +206,6 @@ export function DetailedProfileTab({ cg }: Props) {
               value={cg.allergies}
               onSave={(v) => save("allergies", v)}
             />
-            <EditableField
-              icon={Activity}
-              label="Profile Status"
-              value={cg.status}
-              onSave={(v) => save("status", v)}
-              options={CAREGIVER_STATUS_OPTIONS}
-            />
           </div>
         </CardContent>
       </Card>
