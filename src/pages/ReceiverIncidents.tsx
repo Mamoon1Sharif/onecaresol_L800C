@@ -23,7 +23,10 @@ type Incident = {
   id: string; care_receiver_id: string; incident_ref: string; severity: string; status: string;
   created_by: string | null; created_for: string | null; description: string;
   incident_date: string; closed_at: string | null; created_at: string; updated_at: string;
+  incident_type: string | null; witness: string | null;
 };
+
+const INCIDENT_TYPES = ["Fall", "Medication Error", "Injury", "Behavioural", "Property Damage", "Safeguarding", "Near Miss", "Other"];
 
 const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
