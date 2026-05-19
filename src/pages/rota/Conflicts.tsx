@@ -112,6 +112,20 @@ const Conflicts = () => {
   const [assignFor, setAssignFor] = useState<any | null>(null);
   const [assignSelected, setAssignSelected] = useState<string>("");
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [persistedAssigned, setPersistedAssigned] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("assigned_shifts_v1") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => {
+    const reload = () => {
+      try { setPersistedAssigned(JSON.parse(localStorage.getItem("assigned_shifts_v1") || "{}")); } catch {}
+    };
+    window.addEventListener("focus", reload);
+    window.addEventListener("storage", reload);
+    return () => {
+      window.removeEventListener("focus", reload);
+      window.removeEventListener("storage", reload);
+    };
+  }, []);
   const [openShift, setOpenShift] = useState<any>(null);
 
   const today = new Date();
