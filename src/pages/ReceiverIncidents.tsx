@@ -75,6 +75,7 @@ export default function ReceiverIncidents() {
       incident_ref: String(Math.floor(100000 + Math.random() * 900000)),
       severity: "Low", status: "Open", created_by: cr?.name ?? "",
       created_for: "", description: "", incident_date: new Date().toISOString().slice(0, 16),
+      incident_type: "Other", witness: "",
     });
     setDialogOpen(true);
   };
