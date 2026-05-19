@@ -69,6 +69,7 @@ import Settings from "./pages/Settings.tsx";
 import MyProfile from "./pages/MyProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import BlankPage from "./pages/BlankPage.tsx";
+import Notifications from "./pages/Notifications.tsx";
 
 const queryClient = new QueryClient();
 
