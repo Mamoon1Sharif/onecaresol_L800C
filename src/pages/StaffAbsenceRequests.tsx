@@ -160,7 +160,7 @@ export default function StaffAbsenceRequests() {
           {/* Right: requests table */}
           <Card className="col-span-9 p-0 overflow-hidden">
             <div className="grid grid-cols-[1.4fr_60px_100px_1.2fr_120px_2fr_160px] gap-3 px-4 py-3 border-b text-xs font-semibold text-foreground bg-muted/30">
-              <div>Staff</div><div>Rota</div><div>Type</div><div>Dates</div><div>Leave</div><div>Note</div><div className="text-right">Action</div>
+              <div>Care Giver</div><div>Rota</div><div>Type</div><div>Dates</div><div>Leave</div><div>Note</div><div className="text-right">Action</div>
             </div>
             <ScrollArea className="h-[calc(100vh-260px)]">
               {requests.length === 0 ? (
