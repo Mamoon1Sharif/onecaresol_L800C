@@ -611,7 +611,7 @@ function ClashingRotasSection({ fromDate, toDate }: { fromDate: string; toDate: 
                       className="text-destructive hover:underline font-mono"
                       onClick={() => {
                         const visit = (visits as any[]).find((v) => v.id.slice(0, 9) === p.aRef);
-                        setOpenShift({ ref: p.aRef, visitId: visit?.id, date: p.aDate, start: p.aStart, end: p.aEnd, client: p.aClient, staff: p.staff });
+                        openLiveSingle({ ref: p.aRef, visitId: visit?.id, date: p.aDate, start: p.aStart, end: p.aEnd, client: p.aClient, staff: p.staff });
                       }}
                     >{p.aRef}</button>
                   </td>
