@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCareGivers } from "@/hooks/use-care-data";
 import { removePendingClashesForStaff, removePendingClashesForRef } from "@/pages/rota/Conflicts";
 import { useQueryClient } from "@tanstack/react-query";
+import { getCareGiverAvatar } from "@/lib/avatars";
 
 export type LiveRotaShift = {
   visitId?: string;
