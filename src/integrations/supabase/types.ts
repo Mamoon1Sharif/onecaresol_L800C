@@ -1918,9 +1918,11 @@ export type Database = {
           id: string
           incident_date: string
           incident_ref: string
+          incident_type: string | null
           severity: string
           status: string
           updated_at: string
+          witness: string | null
         }
         Insert: {
           care_receiver_id: string
@@ -1933,9 +1935,11 @@ export type Database = {
           id?: string
           incident_date?: string
           incident_ref: string
+          incident_type?: string | null
           severity?: string
           status?: string
           updated_at?: string
+          witness?: string | null
         }
         Update: {
           care_receiver_id?: string
@@ -1948,9 +1952,11 @@ export type Database = {
           id?: string
           incident_date?: string
           incident_ref?: string
+          incident_type?: string | null
           severity?: string
           status?: string
           updated_at?: string
+          witness?: string | null
         }
         Relationships: []
       }

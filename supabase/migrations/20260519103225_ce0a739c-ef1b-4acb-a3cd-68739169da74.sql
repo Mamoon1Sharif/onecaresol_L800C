@@ -1,0 +1,1 @@
+ALTER TABLE public.receiver_incidents ADD COLUMN IF NOT EXISTS incident_type text, ADD COLUMN IF NOT EXISTS witness text;
