@@ -23,7 +23,10 @@ type Incident = {
   id: string; care_receiver_id: string; incident_ref: string; severity: string; status: string;
   created_by: string | null; created_for: string | null; description: string;
   incident_date: string; closed_at: string | null; created_at: string; updated_at: string;
+  incident_type: string | null; witness: string | null;
 };
+
+const INCIDENT_TYPES = ["Fall", "Medication Error", "Injury", "Behavioural", "Property Damage", "Safeguarding", "Near Miss", "Other"];
 
 const SEVERITIES = ["Low", "Medium", "High", "Critical"];
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -72,6 +75,7 @@ export default function ReceiverIncidents() {
       incident_ref: String(Math.floor(100000 + Math.random() * 900000)),
       severity: "Low", status: "Open", created_by: cr?.name ?? "",
       created_for: "", description: "", incident_date: new Date().toISOString().slice(0, 16),
+      incident_type: "Other", witness: "",
     });
     setDialogOpen(true);
   };
@@ -90,6 +94,8 @@ export default function ReceiverIncidents() {
         created_by: payload.created_by,
         created_for: payload.created_for,
         description: payload.description,
+        incident_type: payload.incident_type ?? null,
+        witness: payload.witness ?? null,
         incident_date: payload.incident_date ? new Date(payload.incident_date).toISOString() : new Date().toISOString(),
         closed_at: payload.status === "Closed" ? (payload.closed_at ?? new Date().toISOString()) : null,
       };
@@ -133,10 +139,12 @@ export default function ReceiverIncidents() {
       <thead className="bg-muted/40">
         <tr className="text-left text-foreground">
           <th className="px-3 py-2 font-semibold">Incident Ref</th>
+          <th className="px-3 py-2 font-semibold">Type</th>
           <th className="px-3 py-2 font-semibold">Severity</th>
           <th className="px-3 py-2 font-semibold">Creation</th>
           <th className="px-3 py-2 font-semibold">Created By</th>
           <th className="px-3 py-2 font-semibold">Created For</th>
+          <th className="px-3 py-2 font-semibold">Witness</th>
           <th className="px-3 py-2 font-semibold">Description</th>
           <th className="px-3 py-2 font-semibold text-right">Actions</th>
         </tr>
@@ -145,10 +153,12 @@ export default function ReceiverIncidents() {
         {rows.map((i) => (
           <tr key={i.id} className="border-t border-border hover:bg-muted/20">
             <td className="px-3 py-2 font-medium text-foreground">{i.incident_ref}</td>
+            <td className="px-3 py-2 text-foreground">{i.incident_type || "—"}</td>
             <td className="px-3 py-2">{sevBadge(i.severity)}</td>
             <td className="px-3 py-2 text-muted-foreground">{format(parseISO(i.incident_date), "dd/MM/yyyy HH:mm")}</td>
             <td className="px-3 py-2 text-foreground">{i.created_by || "—"}</td>
             <td className="px-3 py-2 text-foreground">{i.created_for || "—"}</td>
+            <td className="px-3 py-2 text-foreground">{i.witness || "—"}</td>
             <td className="px-3 py-2 text-foreground max-w-md">{i.description}</td>
             <td className="px-3 py-2">
               <div className="flex items-center gap-1 justify-end">
@@ -247,6 +257,15 @@ export default function ReceiverIncidents() {
                   <SelectContent><SelectItem value="Open">Open</SelectItem><SelectItem value="Closed">Closed</SelectItem></SelectContent>
                 </Select>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Incident Type</Label>
+                <Select value={form.incident_type ?? ""} onValueChange={(v) => setForm({ ...form, incident_type: v })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectContent>{INCIDENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Witness</Label><Input value={form.witness ?? ""} onChange={(e) => setForm({ ...form, witness: e.target.value })} className="h-8 text-xs" placeholder="Witness name(s)" /></div>
             </div>
             <div><Label className="text-xs">Description</Label><Textarea rows={4} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className="text-xs" /></div>
           </div>
