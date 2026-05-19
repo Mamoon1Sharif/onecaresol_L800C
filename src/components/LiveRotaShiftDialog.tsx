@@ -658,6 +658,7 @@ export function LiveRotaShiftDialog({
                   return;
                 }
                 removePendingClashesForStaff(current.staff);
+                removeAssignedShift(current.ref);
                 removePendingClashesForRef(current.ref);
                 await qc.invalidateQueries({ queryKey: ["daily_visits_range"] });
                 await qc.invalidateQueries({ queryKey: ["daily_visits"] });
