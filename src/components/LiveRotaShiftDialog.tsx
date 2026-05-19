@@ -1111,7 +1111,7 @@ function StaffAvailabilitySection({
               className="h-8 text-xs"
             />
           </div>
-          <div className="max-h-[420px] overflow-y-auto divide-y divide-border">
+          <div className="overflow-y-auto divide-y divide-border" style={{ maxHeight: "calc(100vh - 280px)" }}>
             {filtered.length === 0 && (
               <p className="text-xs text-muted-foreground p-3 text-center italic">No staff found.</p>
             )}
