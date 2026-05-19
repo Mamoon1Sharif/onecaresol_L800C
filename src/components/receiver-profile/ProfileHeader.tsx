@@ -7,11 +7,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Heart, MapPin, Phone, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Phone, Pencil, Trash2, Loader2, Tag } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { getCareReceiverAvatar } from "@/lib/avatars";
-import { useDeleteCareReceiver } from "@/hooks/use-care-data";
+import { useDeleteCareReceiver, useUpdateCareReceiver } from "@/hooks/use-care-data";
 import { useToast } from "@/hooks/use-toast";
+import { TagsDialog } from "./TagsDialog";
+import { getTagDef } from "@/lib/receiver-tags";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CareReceiver = Tables<"care_receivers">;
@@ -25,7 +27,11 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const deleteMutation = useDeleteCareReceiver();
+  const updateMutation = useUpdateCareReceiver();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
+
+  const tags: string[] = Array.isArray((cr as any).tags) ? (cr as any).tags : [];
 
   const handleDelete = async () => {
     try {
@@ -33,42 +39,51 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
       toast({ title: "Service user deleted", description: `${cr.name} has been removed.` });
       navigate("/carereceivers");
     } catch (e: any) {
-      toast({
-        title: "Delete failed",
-        description: e?.message ?? "Could not delete service member.",
-        variant: "destructive",
-      });
+      toast({ title: "Delete failed", description: e?.message ?? "Could not delete service member.", variant: "destructive" });
+    }
+  };
+
+  const handleSaveTags = async (next: string[]) => {
+    try {
+      await updateMutation.mutateAsync({ id: cr.id, tags: next } as any);
+      toast({ title: "Tags updated", description: `${next.length} tag${next.length === 1 ? "" : "s"} saved.` });
+    } catch (e: any) {
+      toast({ title: "Update failed", description: e?.message ?? "Could not save tags.", variant: "destructive" });
     }
   };
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        {(() => {
-          const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
-          const isConflicts = from === "conflicts";
-          return (
-            <Button variant="ghost" onClick={() => navigate(isConflicts ? "/rota/conflicts" : "/carereceivers")} className="gap-2 text-muted-foreground">
-              <ArrowLeft className="h-4 w-4" /> {isConflicts ? "Back to Conflicts" : "Back to Service Members"}
-            </Button>
-          );
-        })()}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={onEdit} className="gap-2">
-            <Pencil className="h-4 w-4" /> Edit
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setConfirmOpen(true)}
-            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" /> Delete
-          </Button>
-        </div>
-      </div>
-
       <Card className="border border-border overflow-hidden">
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-8 py-6">
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            {(() => {
+              const from = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("from") : null;
+              const isConflicts = from === "conflicts";
+              return (
+                <Button variant="ghost" size="sm" onClick={() => navigate(isConflicts ? "/rota/conflicts" : "/carereceivers")} className="gap-2 text-muted-foreground -ml-2">
+                  <ArrowLeft className="h-4 w-4" /> {isConflicts ? "Back to Conflicts" : "Back to Service Members"}
+                </Button>
+              );
+            })()}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTagsOpen(true)} className="gap-2">
+                <Tag className="h-4 w-4" /> Edit Tags
+              </Button>
+              <Button variant="outline" size="sm" onClick={onEdit} className="gap-2">
+                <Pencil className="h-4 w-4" /> Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmOpen(true)}
+                className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </Button>
+            </div>
+          </div>
+
           <div className="flex items-start gap-6">
             <AvatarUpload
               table="care_receivers"
@@ -98,9 +113,7 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
                   );
                 })()}
               </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Age {cr.age ?? "—"}
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Age {cr.age ?? "—"}</p>
               {cr.dob && (
                 <p className="text-sm text-muted-foreground mt-0.5">
                   DOB {new Date(cr.dob).toLocaleDateString("en-GB")}
@@ -112,8 +125,28 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
               </div>
             </div>
           </div>
+
+          {tags.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border/60 flex flex-wrap gap-1.5">
+              {tags.map((label) => {
+                const t = getTagDef(label);
+                return (
+                  <span
+                    key={label}
+                    className="inline-flex items-center rounded px-2.5 py-1 text-[11px] font-semibold shadow-sm"
+                    style={{ backgroundColor: t.bg, color: t.fg }}
+                    title={label}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Card>
+
+      <TagsDialog open={tagsOpen} onOpenChange={setTagsOpen} value={tags} onSave={handleSaveTags} />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
