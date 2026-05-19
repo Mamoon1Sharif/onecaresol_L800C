@@ -11,7 +11,9 @@ import { getCareGiverAvatar } from "@/lib/avatars";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { useDeleteCareGiver, useUpdateCareGiver } from "@/hooks/use-care-data";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CalendarDays, Phone, Mail, Trash2, Loader2, Activity } from "lucide-react";
+import { ArrowLeft, CalendarDays, Phone, Mail, Trash2, Loader2, Activity, Tag } from "lucide-react";
+import { TagsDialog } from "@/components/receiver-profile/TagsDialog";
+import { getTagDef } from "@/lib/receiver-tags";
 import { cn } from "@/lib/utils";
 import { CAREGIVER_STATUS_OPTIONS } from "@/lib/profile-options";
 import type { Tables } from "@/integrations/supabase/types";
@@ -28,6 +30,9 @@ export function ProfileHeader({ cg }: Props) {
   const deleteMutation = useDeleteCareGiver();
   const updateMutation = useUpdateCareGiver();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
+
+  const tags: string[] = Array.isArray((cg as any).tags) ? (cg as any).tags : [];
 
   const handleStatusChange = async (status: string) => {
     try {
@@ -51,6 +56,15 @@ export function ProfileHeader({ cg }: Props) {
     }
   };
 
+  const handleSaveTags = async (next: string[]) => {
+    try {
+      await updateMutation.mutateAsync({ id: cg.id, tags: next } as any);
+      toast({ title: "Tags updated", description: `${next.length} tag${next.length === 1 ? "" : "s"} saved.` });
+    } catch (e: any) {
+      toast({ title: "Update failed", description: e?.message ?? "Could not save tags.", variant: "destructive" });
+    }
+  };
+
   return (
     <>
       <Card className="border border-border overflow-hidden">
@@ -60,6 +74,9 @@ export function ProfileHeader({ cg }: Props) {
               <ArrowLeft className="h-4 w-4" /> Back to Care Givers
             </Button>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTagsOpen(true)} className="gap-2">
+                <Tag className="h-4 w-4" /> Edit Tags
+              </Button>
               <Button variant="outline" size="sm" onClick={() => navigate(`/caregivers/${cg.id}/schedule`)} className="gap-2">
                 <CalendarDays className="h-4 w-4" /> View Schedule
               </Button>
@@ -109,10 +126,31 @@ export function ProfileHeader({ cg }: Props) {
               </div>
             </div>
           </div>
+
+          {tags.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-border/60 flex flex-wrap gap-1.5">
+              {tags.map((label) => {
+                const t = getTagDef(label);
+                return (
+                  <span
+                    key={label}
+                    className="inline-flex items-center rounded px-2.5 py-1 text-[11px] font-semibold shadow-sm"
+                    style={{ backgroundColor: t.bg, color: t.fg }}
+                    title={label}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
       </Card>
 
+      <TagsDialog open={tagsOpen} onOpenChange={setTagsOpen} value={tags} onSave={handleSaveTags} />
+
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {cg.name}?</AlertDialogTitle>
