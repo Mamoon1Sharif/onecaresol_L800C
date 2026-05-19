@@ -369,6 +369,15 @@ export function LiveRotaShiftDialog({
               </div>
             </section>
 
+            {/* Staff + Availability */}
+            <StaffAvailabilitySection
+              caregivers={caregivers as any[]}
+              currentStaffName={current.staff}
+              shiftDate={current.date}
+            />
+
+
+
             {/* Medication */}
             <section className="border border-border rounded-sm overflow-hidden">
               <div className="border-t-2 border-t-primary/70 flex items-center justify-between px-3 py-2 bg-card">
@@ -1019,3 +1028,223 @@ function ShiftChangeConfirmation({
     </Dialog>
   );
 }
+
+/* ============================================================
+ * Staff list + Detailed Availability report
+ * ============================================================ */
+
+type StaffRow = {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+  match: number;
+  avatar_url?: string | null;
+};
+
+const MOCK_SHIFTS = [
+  { day: "Tues", week: "week1", start: "08:15", end: "08:45", dur: "00:30", service: "Private Morning Call", client: "Rosalie Merret", tone: "bg-emerald-50" },
+  { day: "Tues", week: "week1", start: "09:00", end: "09:45", dur: "00:45", service: "Private Morning Call", client: "Ivy Edkins",      tone: "bg-emerald-50" },
+  { day: "Tues", week: "week1", start: "10:00", end: "10:30", dur: "00:30", service: "Private Morning Call", client: "Vera Thomas",     tone: "bg-emerald-50" },
+  { day: "Tues", week: "week1", start: "11:15", end: "12:00", dur: "00:45", service: "WCC - Morning Call (Z4-T3)", client: "James Hamilton", tone: "bg-emerald-50" },
+  { day: "Tues", week: "week1", start: "12:30", end: "13:00", dur: "00:30", service: "Private Lunch Call",  client: "Michael Taylor",   tone: "bg-rose-50" },
+];
+
+function StaffAvailabilitySection({
+  caregivers,
+  currentStaffName,
+  shiftDate,
+}: {
+  caregivers: any[];
+  currentStaffName: string;
+  shiftDate: string;
+}) {
+  const list: StaffRow[] = (caregivers ?? []).slice(0, 12).map((cg, i) => ({
+    id: cg.id,
+    name: cg.name,
+    avatar_url: cg.avatar_url,
+    start: ["08:45", "07:00", "07:30", "09:00", "08:00", "10:00"][i % 6],
+    end:   ["18:30", "14:00", "14:30", "17:00", "16:00", "20:00"][i % 6],
+    match: [100, 100, 100, 92, 88, 100, 76, 100, 95][i % 9],
+  }));
+
+  const initialSel = list.find((s) => s.name === currentStaffName)?.id ?? list[0]?.id ?? "";
+  const [selectedId, setSelectedId] = useState<string>(initialSel);
+  const [search, setSearch] = useState("");
+  const [tableSearch, setTableSearch] = useState("");
+
+  const filtered = list.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
+  const selected = list.find((s) => s.id === selectedId);
+
+  // Deterministic mock stats per caregiver
+  const hashSeed = (selected?.id ?? "x").split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  const clashes = hashSeed % 3;
+  const totalVisits = hashSeed % 5;
+  const holidays = hashSeed % 2;
+  const skills = [100, 95, 88, 100, 92][hashSeed % 5];
+
+  const shifts = MOCK_SHIFTS.filter((s) =>
+    !tableSearch || s.client.toLowerCase().includes(tableSearch.toLowerCase()) || s.service.toLowerCase().includes(tableSearch.toLowerCase())
+  );
+
+  const totalDur = shifts.reduce((acc, s) => {
+    const [h, m] = s.dur.split(":").map(Number);
+    return acc + h * 60 + m;
+  }, 0);
+  const totalDurStr = `${String(Math.floor(totalDur / 60)).padStart(2, "0")}:${String(totalDur % 60).padStart(2, "0")}`;
+
+  return (
+    <section className="border border-border rounded-sm overflow-hidden">
+      <div className="border-t-2 border-t-primary/70 grid grid-cols-1 lg:grid-cols-[280px_1fr] divide-y lg:divide-y-0 lg:divide-x divide-border">
+        {/* Staff list pane */}
+        <div className="bg-card">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <span className="text-muted-foreground">👤</span> Staff
+            </h3>
+            <Button size="sm" className="h-7 bg-success hover:bg-success/90 text-success-foreground">View More</Button>
+          </div>
+          <div className="p-2 border-b border-border">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search Visible Staff..."
+              className="h-8 text-xs"
+            />
+          </div>
+          <div className="max-h-[420px] overflow-y-auto divide-y divide-border">
+            {filtered.length === 0 && (
+              <p className="text-xs text-muted-foreground p-3 text-center italic">No staff found.</p>
+            )}
+            {filtered.map((s) => {
+              const isSel = s.id === selectedId;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSelectedId(s.id)}
+                  className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 transition-colors ${isSel ? "bg-primary/10" : "hover:bg-muted/50"}`}
+                >
+                  <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0 overflow-hidden">
+                    {s.avatar_url ? <img src={s.avatar_url} alt="" className="h-full w-full object-cover" /> : s.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-primary truncate">{s.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.start} to {s.end}</p>
+                    <p className={`text-[10px] font-semibold ${s.match >= 95 ? "text-success" : s.match >= 80 ? "text-amber-600" : "text-destructive"}`}>{s.match.toFixed(2)}% Match</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Availability pane */}
+        <div className="bg-card">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              📅 Availability
+            </h3>
+            <Button size="sm" className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground">
+              <Plus className="h-3 w-3" /> Link To Call
+            </Button>
+          </div>
+
+          {!selected ? (
+            <div className="p-10 text-center">
+              <p className="text-lg font-semibold text-foreground">Select Staff Member</p>
+              <p className="text-xs text-warning mt-1">Select a staff member on the left to show their availability for this call</p>
+            </div>
+          ) : (
+            <div className="p-4 space-y-4">
+              <div>
+                <h4 className="text-base font-semibold text-foreground">{selected.name}</h4>
+                <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                  You have a setting on which prevents team members below are certain pref score (3 stars) being allocated to service user calls. Team members with no pref can still be added to service users calls and the service users pref will automatically be set to (3 stars) for {selected.name}.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <StatCard tone="danger" value={clashes} label="Clashes" icon="⚠" />
+                <StatCard tone="danger" value={totalVisits} label="Total Visits" icon="⇄" />
+                <StatCard tone="success" value={holidays} label="Holidays Booked" icon="✈" />
+                <StatCard tone="success" value={`${skills}%`} label="Skills Match" icon="🎓" />
+              </div>
+
+              <div className="rounded-sm bg-sky-500 text-white p-3">
+                <p className="text-sm font-semibold">Service User Carer Pref</p>
+                <p className="text-xs mt-1 opacity-95">Carer Pref: Either</p>
+                <p className="text-xs opacity-95">Team Member Gender: Female</p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="text-xs font-semibold text-foreground">📅 Shifts Assigned To {selected.name} On {shiftDate || "—"}</h5>
+                  <div className="flex items-center gap-1.5">
+                    <Label className="text-[11px]">Search</Label>
+                    <Input value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} className="h-7 w-40 text-xs" />
+                  </div>
+                </div>
+                <div className="overflow-x-auto border border-border rounded-sm">
+                  <table className="w-full text-[12px] border-collapse">
+                    <thead>
+                      <tr className="bg-muted/40">
+                        <th className="p-2 border-r border-border text-left">Day</th>
+                        <th className="p-2 border-r border-border text-left">Week</th>
+                        <th className="p-2 border-r border-border text-left">Start</th>
+                        <th className="p-2 border-r border-border text-left">End</th>
+                        <th className="p-2 border-r border-border text-left">Dur</th>
+                        <th className="p-2 border-r border-border text-left">Service</th>
+                        <th className="p-2 text-left">Client</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shifts.length === 0 && (
+                        <tr><td colSpan={7} className="p-3 text-center text-xs text-muted-foreground">No shifts match.</td></tr>
+                      )}
+                      {shifts.map((s, i) => (
+                        <tr key={i} className={`${s.tone} border-t border-border`}>
+                          <td className="p-2 border-r border-border">{s.day}</td>
+                          <td className="p-2 border-r border-border">{s.week}</td>
+                          <td className="p-2 border-r border-border font-mono">{s.start}</td>
+                          <td className="p-2 border-r border-border font-mono">{s.end}</td>
+                          <td className="p-2 border-r border-border font-mono">{s.dur}</td>
+                          <td className="p-2 border-r border-border">{s.service}</td>
+                          <td className="p-2">{s.client}</td>
+                        </tr>
+                      ))}
+                      <tr className="bg-muted/30 font-semibold border-t border-border">
+                        <td className="p-2 border-r border-border">Total:</td>
+                        <td className="p-2 border-r border-border"></td>
+                        <td className="p-2 border-r border-border"></td>
+                        <td className="p-2 border-r border-border"></td>
+                        <td className="p-2 border-r border-border font-mono">{totalDurStr}</td>
+                        <td className="p-2 border-r border-border"></td>
+                        <td className="p-2"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[11px] text-muted-foreground pt-1.5">Showing 1 to {shifts.length} of {shifts.length}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatCard({ tone, value, label, icon }: { tone: "danger" | "success"; value: string | number; label: string; icon: string }) {
+  const bg = tone === "danger" ? "bg-destructive" : "bg-success";
+  return (
+    <div className={`${bg} text-white rounded-sm p-3 flex items-center justify-between`}>
+      <div>
+        <div className="text-2xl font-bold leading-none">{value}</div>
+        <div className="text-xs mt-1 opacity-95">{label}</div>
+      </div>
+      <div className="text-3xl opacity-30">{icon}</div>
+    </div>
+  );
+}
+
