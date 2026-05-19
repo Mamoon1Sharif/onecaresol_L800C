@@ -452,7 +452,8 @@ export function LiveRotaShiftDialog({
             {/* Medication */}
             <section className="border border-border rounded-sm overflow-hidden">
               <div className="border-t-2 border-t-primary/70 flex items-center justify-between px-3 py-2 bg-card">
-                <h3 className="text-sm font-semibold text-primary">Medication (Evening Medication)</h3>
+                <h3 className="text-sm font-semibold text-primary">Medication ({medGroupLabel})</h3>
+                <span className="text-xs text-muted-foreground">{clientName || "—"}</span>
               </div>
               <div className="p-3 space-y-2">
                 <div className="flex items-center gap-2">
@@ -460,8 +461,8 @@ export function LiveRotaShiftDialog({
                     <SelectTrigger className="h-8 w-[220px] text-xs"><SelectValue placeholder="Please Select Meds..." /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Medications</SelectItem>
-                      {INITIAL_MEDS.map((m) => (
-                        <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+                      {Array.from(new Set(liveMeds.map((m: any) => m.medication))).map((name) => (
+                        <SelectItem key={name as string} value={name as string}>{name as string}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -490,31 +491,40 @@ export function LiveRotaShiftDialog({
                     </thead>
                     <tbody>
                       {filteredMeds.length === 0 && (
-                        <tr><td colSpan={11} className="p-3 text-center text-xs text-muted-foreground border border-border">No medications match.</td></tr>
+                        <tr><td colSpan={11} className="p-3 text-center text-xs text-muted-foreground border border-border">
+                          {clientName ? `No medications recorded for ${clientName}.` : "No client selected."}
+                        </td></tr>
                       )}
-                      {filteredMeds.map((m) => (
-                        <tr key={m.name} className="border-b border-border hover:bg-muted/30">
-                          <td className="p-2 border border-border">
-                            <Checkbox
-                              checked={!!medChecked[m.name]}
-                              onCheckedChange={(v) => setMedChecked((p) => ({ ...p, [m.name]: !!v }))}
-                            />
-                          </td>
-                          <td className="p-2 border border-border">{m.name}</td>
-                          <td className="p-2 border border-border">Due</td>
-                          <td className="p-2 border border-border text-center text-destructive">✕</td>
-                          <td className="p-2 border border-border"></td>
-                          <td className="p-2 border border-border">Medication Not Administered Through The System</td>
-                          <td className="p-2 border border-border"></td>
-                          <td className="p-2 border border-border">Evening Medication</td>
-                          <td className="p-2 border border-border">{m.period}</td>
-                          <td className="p-2 border border-border whitespace-pre-line">{m.planned.join("\n")}</td>
-                          <td className="p-2 border border-border">-</td>
-                        </tr>
-                      ))}
+                      {filteredMeds.map((m: any) => {
+                        const administered = !!m.administered_by;
+                        const planned = [m.dosage ? `Administer ${m.dosage}` : "Administer", m.notes].filter(Boolean).join("\n");
+                        const period = m.scheduled_time
+                          ? `${m.time_of_day ? m.time_of_day + ": " : ""}${m.scheduled_time}`
+                          : (m.time_of_day || "—");
+                        return (
+                          <tr key={m.id} className="border-b border-border hover:bg-muted/30">
+                            <td className="p-2 border border-border">
+                              <Checkbox
+                                checked={!!medChecked[m.id]}
+                                onCheckedChange={(v) => setMedChecked((p) => ({ ...p, [m.id]: !!v }))}
+                              />
+                            </td>
+                            <td className="p-2 border border-border">{m.medication}</td>
+                            <td className="p-2 border border-border">{administered ? "Administered" : "Due"}</td>
+                            <td className={`p-2 border border-border text-center ${administered ? "text-success" : "text-destructive"}`}>{administered ? "✓" : "✕"}</td>
+                            <td className="p-2 border border-border">{m.notes || ""}</td>
+                            <td className="p-2 border border-border">{administered ? `Administered by ${m.administered_by}` : "Medication Not Administered Through The System"}</td>
+                            <td className="p-2 border border-border">{m.service_type || ""}</td>
+                            <td className="p-2 border border-border">{medGroupLabel}</td>
+                            <td className="p-2 border border-border">{period}</td>
+                            <td className="p-2 border border-border whitespace-pre-line">{planned}</td>
+                            <td className="p-2 border border-border">-</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
-                  <p className="text-xs text-muted-foreground pt-2">Showing {filteredMeds.length} of {INITIAL_MEDS.length}</p>
+                  <p className="text-xs text-muted-foreground pt-2">Showing {filteredMeds.length} of {liveMeds.length}</p>
                 </div>
               </div>
             </section>
