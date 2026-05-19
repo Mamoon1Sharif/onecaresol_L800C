@@ -1157,7 +1157,7 @@ function StaffAvailabilitySection({
   const [search, setSearch] = useState("");
   const [tableSearch, setTableSearch] = useState("");
 
-  const filtered = list.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = list.filter((s) => (s.name ?? "").toLowerCase().includes(search.toLowerCase()));
   const selected = list.find((s) => s.id === selectedId);
 
   // Deterministic mock stats per caregiver
@@ -1212,7 +1212,7 @@ function StaffAvailabilitySection({
                   className={`w-full text-left px-3 py-2.5 flex items-center gap-2.5 transition-colors ${isSel ? "bg-primary/10" : "hover:bg-muted/50"}`}
                 >
                   <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-[10px] font-semibold text-muted-foreground shrink-0 overflow-hidden">
-                    {s.avatar_url ? <img src={s.avatar_url} alt="" className="h-full w-full object-cover" /> : s.name.split(" ").map((p) => p[0]).slice(0, 2).join("")}
+                    {s.avatar_url ? <img src={s.avatar_url} alt="" className="h-full w-full object-cover" /> : (s.name ?? "").split(" ").map((p) => p[0] ?? "").slice(0, 2).join("")}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-semibold text-primary truncate">{s.name}</p>
