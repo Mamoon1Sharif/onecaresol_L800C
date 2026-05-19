@@ -234,14 +234,21 @@ export function LiveRotaShiftDialog({
                       <>
                         <button
                           type="button"
-                          onClick={() => setAssignOpen(true)}
+                          onClick={() => {
+                            const el = document.getElementById("staff-availability-section");
+                            if (el) {
+                              el.scrollIntoView({ behavior: "smooth", block: "start" });
+                              el.classList.add("ring-2", "ring-primary");
+                              setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1600);
+                            }
+                          }}
                           className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors"
                         >
-                          <span className="text-base font-medium">Add Staff</span>
-                          <span className="text-xs mt-1">Assign Staff Member</span>
+                          <span className="text-base font-medium">Add Care Giver/s</span>
+                          <span className="text-xs mt-1">Assign a Care Giver to this shift</span>
                         </button>
                         <p className="text-xs text-primary mt-4 text-center">
-                          If clock in or out distances are not showing, it means your team member has location services off on their mobile phone.
+                          If clock in or out distances are not showing, it means your care giver has location services off on their mobile phone.
                         </p>
                       </>
                     ) : (
