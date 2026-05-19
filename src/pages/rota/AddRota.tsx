@@ -124,11 +124,12 @@ const AddRota = () => {
   const uniqueMeds = useMemo(() => {
     const map = new Map<string, any>();
     for (const m of medications as any[]) {
+      if (m.service_type && m.service_type !== form.serviceList) continue;
       const key = `${(m.medication || "").toLowerCase()}|${(m.dosage || "").toLowerCase()}|${(m.time_of_day || "").toLowerCase()}`;
       if (!map.has(key)) map.set(key, m);
     }
     return Array.from(map.values());
-  }, [medications]);
+  }, [medications, form.serviceList]);
 
   // Bucket the shift's start time into a time-of-day window.
   const shiftWindow = useMemo(() => {
