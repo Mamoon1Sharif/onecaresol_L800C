@@ -1231,14 +1231,26 @@ function StaffAvailabilitySection({
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               📅 Availability
             </h3>
-            <Button
-              size="sm"
-              disabled={!selected}
-              className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
-              onClick={() => selected && setConfirmAssign(true)}
-            >
-              <Plus className="h-3 w-3" /> Assign this Shift
-            </Button>
+            {(() => {
+              const isAssigned = !!currentStaffName && currentStaffName.toLowerCase() !== "unallocated";
+              if (isAssigned) {
+                return (
+                  <span className="text-[11px] text-muted-foreground italic">
+                    Shift assigned to {currentStaffName} — remove care giver to reassign.
+                  </span>
+                );
+              }
+              return (
+                <Button
+                  size="sm"
+                  disabled={!selected}
+                  className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
+                  onClick={() => selected && setConfirmAssign(true)}
+                >
+                  <Plus className="h-3 w-3" /> Assign this Shift
+                </Button>
+              );
+            })()}
           </div>
 
           {!selected ? (
