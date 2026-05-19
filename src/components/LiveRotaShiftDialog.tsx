@@ -19,6 +19,7 @@ import { useCareGivers } from "@/hooks/use-care-data";
 import { removePendingClashesForStaff, removePendingClashesForRef } from "@/pages/rota/Conflicts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getCareGiverAvatar } from "@/lib/avatars";
+import { saveAssignedShift, removeAssignedShift, toIsoDate } from "@/lib/assigned-shifts";
 
 export type LiveRotaShift = {
   visitId?: string;
@@ -436,12 +437,16 @@ export function LiveRotaShiftDialog({
               onAssign={(name) => {
                 setCurrent({ ...current, staff: name });
                 setRemoved(false);
-                try {
-                  const KEY = "assigned_shifts_v1";
-                  const map = JSON.parse(localStorage.getItem(KEY) || "{}");
-                  map[current.ref] = name;
-                  localStorage.setItem(KEY, JSON.stringify(map));
-                } catch {}
+                saveAssignedShift({
+                  ref: current.ref,
+                  dateIso: toIsoDate(current.date),
+                  start: current.start,
+                  end: current.end,
+                  client: current.client,
+                  staff: name,
+                  serviceCall: current.serviceCall,
+                  schedHrs: current.schedHrs,
+                });
                 removePendingClashesForRef(current.ref);
                 toast.success(`${name} assigned to shift ${current.ref}`);
               }}
@@ -653,6 +658,7 @@ export function LiveRotaShiftDialog({
                   return;
                 }
                 removePendingClashesForStaff(current.staff);
+                removeAssignedShift(current.ref);
                 removePendingClashesForRef(current.ref);
                 await qc.invalidateQueries({ queryKey: ["daily_visits_range"] });
                 await qc.invalidateQueries({ queryKey: ["daily_visits"] });

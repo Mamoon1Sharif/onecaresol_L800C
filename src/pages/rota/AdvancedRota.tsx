@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
+import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
 import { supabase } from "@/integrations/supabase/client";
 import { EditRotaDialog, type EditRotaShift } from "@/components/EditRotaDialog";
 import { useNavigate } from "react-router-dom";
@@ -265,6 +266,9 @@ export default function AdvancedRota() {
     return () => { supabase.removeChannel(ch); };
   }, [refetchVisits, autoRefresh]);
 
+  const [assignedTick, setAssignedTick] = useState(0);
+  useEffect(() => subscribeAssignedShifts(() => setAssignedTick((n) => n + 1)), []);
+
   // Build shifts from database visits, then apply any user overrides
   const shifts = useMemo<Shift[]>(() => {
     const allShifts: Shift[] = [];
@@ -277,8 +281,31 @@ export default function AdvancedRota() {
       const ov = overrides[shift.id];
       allShifts.push(ov ? { ...shift, ...ov } : shift);
     });
+
+    // Inject synthetic shifts assigned from the Conflicts flow
+    for (const a of getAssignedShifts()) {
+      const dayIdx = days.findIndex((d) => formatDateISO(d) === a.dateIso);
+      if (dayIdx < 0) continue;
+      const start = timeToHours(a.start);
+      const end = timeToHours(a.end);
+      const id = `assigned-${a.ref}`;
+      const base: Shift = {
+        id,
+        staff: a.staff,
+        start,
+        end,
+        client: a.client,
+        ref: a.ref,
+        service: a.serviceCall || "Visit",
+        status: "scheduled",
+        dayIndex: dayIdx,
+      } as Shift;
+      const ov = overrides[id];
+      allShifts.push(ov ? { ...base, ...ov } : base);
+    }
+
     return allShifts;
-  }, [rawVisits, days, overrides]);
+  }, [rawVisits, days, overrides, assignedTick]);
 
   // Detect per-caregiver overlapping shifts (conflicts).
   const conflicts = useMemo(() => {

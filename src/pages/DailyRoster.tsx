@@ -27,6 +27,7 @@ import { VisitDetailDialog } from "@/components/VisitDetailDialog";
 import { CareGiverProfileDialog } from "@/components/CareGiverProfileDialog";
 import { CareReceiverProfileDialog } from "@/components/CareReceiverProfileDialog";
 import { getVisitStatus } from "@/lib/visit-status-utils";
+import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
 
 // Reusable tooltip-wrapped icon for table headers/cells
 function IconCell({
@@ -121,11 +122,14 @@ const DailyRoster = () => {
   const [receiverProfile, setReceiverProfile] = useState<any>(null);
   const [caregiverProfile, setCaregiverProfile] = useState<any>(null);
   const [nowTick, setNowTick] = useState(0);
+  const [assignedTick, setAssignedTick] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => setNowTick((n) => n + 1), 30000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => subscribeAssignedShifts(() => setAssignedTick((n) => n + 1)), []);
 
   useEffect(() => {
     const ch = supabase
@@ -205,13 +209,51 @@ const DailyRoster = () => {
       };
     });
 
-    return mapped.filter((r) => {
+    // Inject synthetic shifts that were assigned from the Conflicts → Live Single Rota flow
+    const assignedForDay = getAssignedShifts().filter((a) => a.dateIso === dateStr);
+    const synthetic = assignedForDay.map((a) => {
+      const startH = timeToHours(a.start);
+      const endH = timeToHours(a.end);
+      const durMins = Math.max(0, Math.round((endH - startH) * 60));
+      const fmtDur = `${String(Math.floor(durMins / 60)).padStart(2, "0")}:${String(durMins % 60).padStart(2, "0")}`;
+      return {
+        id: `assigned-${a.ref}`,
+        ref: a.ref,
+        date: getDateShort(dayOffset),
+        status: "Allocated",
+        isFuture: true,
+        accepted: true,
+        serviceUser: a.client,
+        serviceUserRaw: a.client.split(" - ")[0],
+        scheduledStart: a.start,
+        scheduledEnd: a.end,
+        duration: fmtDur,
+        actualStart: "—",
+        actualEnd: "—",
+        actualDuration: "—",
+        checkInLat: null,
+        checkInLng: null,
+        teamMember: a.staff,
+        serviceCall: a.serviceCall ?? "—",
+        week: "Week 1",
+        weekNum: 1,
+        receiver_id: null,
+        rawDate: a.dateIso,
+        rawVisit: null,
+        receiver: { name: a.client.split(" - ")[0] },
+        caregiver: { name: a.staff },
+      } as any;
+    });
+
+    const all = [...mapped, ...synthetic];
+
+    return all.filter((r) => {
       if (teamFilter && r.teamMember !== teamFilter) return false;
       if (serviceFilter && r.serviceUserRaw !== serviceFilter) return false;
       if (search && !r.serviceUser.toLowerCase().includes(search.toLowerCase()) && !r.teamMember.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [rawVisits, dayOffset, dateStr, teamFilter, serviceFilter, search, nowTick]);
+  }, [rawVisits, dayOffset, dateStr, teamFilter, serviceFilter, search, nowTick, assignedTick]);
 
   const schedHours = rows.reduce((acc, r) => {
     const [h, m] = r.duration.split(":").map(Number);
