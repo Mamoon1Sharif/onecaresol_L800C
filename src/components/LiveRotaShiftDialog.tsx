@@ -339,7 +339,6 @@ export function LiveRotaShiftDialog({
                     <thead>
                       <tr className="bg-muted/40">
                         <th className="p-2 border border-border text-left">Ref</th>
-                        <th className="p-2 border border-border text-left">Created</th>
                         <th className="p-2 border border-border text-left">Note</th>
                         <th className="p-2 border border-border text-left">Created By</th>
                         <th className="p-2 border border-border text-left">Visible</th>
@@ -350,7 +349,6 @@ export function LiveRotaShiftDialog({
                       {notes.map((n) => (
                         <tr key={n.ref} className="border-b border-border hover:bg-muted/30">
                           <td className="p-2 border border-border font-mono text-[11px]">{n.ref}</td>
-                          <td className="p-2 border border-border">{n.created}</td>
                           <td className="p-2 border border-border">{n.note}</td>
                           <td className="p-2 border border-border text-primary underline cursor-pointer">{n.by}</td>
                           <td className="p-2 border border-border">{n.visible}</td>

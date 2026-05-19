@@ -564,10 +564,8 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                         <thead>
                           <tr className="bg-muted/40 border-b border-border text-left">
                             <th className="p-2 border-r border-border w-8"><input type="checkbox" className="rounded" /></th>
-                            <th className="p-2 border-r border-border w-12">Edit</th>
                             <th className="p-2 border-r border-border w-28">Ref</th>
                             <th className="p-2 border-r border-border w-20">Tags</th>
-                            <th className="p-2 border-r border-border w-32">Created</th>
                             <th className="p-2 border-r border-border">Note</th>
                             <th className="p-2 border-r border-border w-32">Created By</th>
                             <th className="p-2 w-24">Visible On Device</th>
@@ -579,11 +577,6 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                             return (
                               <tr key={n.id} className={`border-b border-border ${isPrivate ? "bg-amber-50/50 dark:bg-amber-950/20" : (i % 2 === 0 ? "bg-background" : "bg-muted/20")}`}>
                                 <td className="p-1.5 border-r border-border text-center"><input type="checkbox" /></td>
-                                <td className="p-1.5 border-r border-border">
-                                  <Button size="icon" variant="ghost" className="h-6 w-6">
-                                    <Pencil className="h-3 w-3 text-orange-500" />
-                                  </Button>
-                                </td>
                                 <td className="p-1.5 border-r border-border font-mono text-[11px] text-muted-foreground">{n.ref}</td>
                                 <td className="p-1.5 border-r border-border">
                                   {isPrivate ? (
@@ -594,7 +587,6 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                                     (n.tags || []).join(", ")
                                   )}
                                 </td>
-                                <td className="p-1.5 border-r border-border whitespace-nowrap text-[11px]">{n.createdAt}</td>
                                 <td className="p-1.5 border-r border-border text-[11px] font-medium">{n.text}</td>
                                 <td className="p-1.5 border-r border-border text-[11px]">{n.author}</td>
                                 <td className="p-1.5 text-[11px]">{n.visibleOnDevice === false ? "No" : "Yes"}</td>
