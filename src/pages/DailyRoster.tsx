@@ -122,11 +122,14 @@ const DailyRoster = () => {
   const [receiverProfile, setReceiverProfile] = useState<any>(null);
   const [caregiverProfile, setCaregiverProfile] = useState<any>(null);
   const [nowTick, setNowTick] = useState(0);
+  const [assignedTick, setAssignedTick] = useState(0);
 
   useEffect(() => {
     const t = setInterval(() => setNowTick((n) => n + 1), 30000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => subscribeAssignedShifts(() => setAssignedTick((n) => n + 1)), []);
 
   useEffect(() => {
     const ch = supabase
