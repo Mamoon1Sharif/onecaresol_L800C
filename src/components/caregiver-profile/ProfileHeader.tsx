@@ -26,7 +26,16 @@ export function ProfileHeader({ cg }: Props) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const deleteMutation = useDeleteCareGiver();
+  const updateMutation = useUpdateCareGiver();
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleStatusChange = async (status: string) => {
+    try {
+      await updateMutation.mutateAsync({ id: cg.id, patch: { status } as any });
+    } catch (e: any) {
+      toast({ title: "Update failed", description: e?.message ?? "Could not update status.", variant: "destructive" });
+    }
+  };
 
   const handleDelete = async () => {
     try {
