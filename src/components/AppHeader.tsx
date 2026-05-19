@@ -56,6 +56,9 @@ export function AppHeader() {
   const [togglesOpen, setTogglesOpen] = useState(false);
 
   const companyName = (company as any)?.companies?.name ?? "CareAdmin";
+  const now = useLiveClock();
+  const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
 
   const handleLogout = async () => {
     try {
