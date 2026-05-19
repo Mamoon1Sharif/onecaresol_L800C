@@ -122,16 +122,6 @@ export function ReceiverDetailedProfileTab({ cr }: { cr: CareReceiver }) {
             <EditableField icon={KeyRound} label="Mediverify" value={(cr as any).mediverify} onSave={(v) => save("mediverify", v)} />
             <EditableField icon={User} label="Preferred Language" value={(cr as any).preferred_language ?? cr.language} onSave={(v) => save("preferred_language", v)} />
             <EditableField icon={Stethoscope} label="Allergies" value={(cr as any).allergies} onSave={(v) => save("allergies", v)} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Contact Details */}
-      <Card className="border border-border">
-        <CardContent className="p-6">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Contact Details</h3>
-          <Separator className="mb-4" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
             <EditableField icon={Phone} label="Phone Number" value={(cr as any).phone_number} onSave={(v) => save("phone_number", v)} type="tel" />
             <div className="flex items-center gap-3 py-2">
               <Phone className="h-4 w-4 text-muted-foreground" />
@@ -140,20 +130,11 @@ export function ReceiverDetailedProfileTab({ cr }: { cr: CareReceiver }) {
                 <Switch checked={(cr as any).phone_appears_on_app ?? true} onCheckedChange={(v) => save("phone_appears_on_app", v)} />
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Address */}
-      <Card className="border border-border">
-        <CardContent className="p-6">
-          <h3 className="text-sm font-bold uppercase tracking-widest text-primary mb-1">Address</h3>
-          <Separator className="mb-4" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-1">
             <EditableField icon={Home} label="Address" value={cr.address} onSave={(v) => save("address", v)} />
           </div>
         </CardContent>
       </Card>
+
 
       {/* Account Details */}
       <Card className="border border-border">
