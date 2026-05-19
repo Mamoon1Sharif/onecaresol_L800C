@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
+import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
 import { supabase } from "@/integrations/supabase/client";
 import { EditRotaDialog, type EditRotaShift } from "@/components/EditRotaDialog";
 import { useNavigate } from "react-router-dom";
