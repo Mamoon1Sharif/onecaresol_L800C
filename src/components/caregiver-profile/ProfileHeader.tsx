@@ -30,6 +30,9 @@ export function ProfileHeader({ cg }: Props) {
   const deleteMutation = useDeleteCareGiver();
   const updateMutation = useUpdateCareGiver();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [tagsOpen, setTagsOpen] = useState(false);
+
+  const tags: string[] = Array.isArray((cg as any).tags) ? (cg as any).tags : [];
 
   const handleStatusChange = async (status: string) => {
     try {
