@@ -26,6 +26,8 @@ import { cn } from "@/lib/utils";
 import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
 import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
+import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
+import { isShiftAssigned } from "@/lib/assigned-shifts";
 import { supabase } from "@/integrations/supabase/client";
 import { EditRotaDialog, type EditRotaShift } from "@/components/EditRotaDialog";
 import { useNavigate } from "react-router-dom";
@@ -304,8 +306,30 @@ export default function AdvancedRota() {
       allShifts.push(ov ? { ...base, ...ov } : base);
     }
 
+    // Inject unallocated shifts from the Conflicts pool
+    const unassignedPool = buildUnassignedShifts(careReceivers as any);
+    for (const u of unassignedPool) {
+      if (isShiftAssigned(u.ref)) continue;
+      const dayIdx = days.findIndex((d) => formatDateISO(d) === u.dateIso);
+      if (dayIdx < 0) continue;
+      const id = `unassigned-${u.ref}`;
+      const base: Shift = {
+        id,
+        staff: "Unassigned Shifts",
+        start: timeToHours(u.start),
+        end: timeToHours(u.end),
+        client: u.serviceUser,
+        ref: u.ref,
+        service: u.serviceCall || "Visit",
+        status: "scheduled",
+        dayIndex: dayIdx,
+      } as Shift;
+      const ov = overrides[id];
+      allShifts.push(ov ? { ...base, ...ov } : base);
+    }
+
     return allShifts;
-  }, [rawVisits, days, overrides, assignedTick]);
+  }, [rawVisits, days, overrides, assignedTick, careReceivers]);
 
   // Detect per-caregiver overlapping shifts (conflicts).
   const conflicts = useMemo(() => {
