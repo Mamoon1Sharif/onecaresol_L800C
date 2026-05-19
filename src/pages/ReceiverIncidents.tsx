@@ -258,6 +258,15 @@ export default function ReceiverIncidents() {
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Incident Type</Label>
+                <Select value={form.incident_type ?? ""} onValueChange={(v) => setForm({ ...form, incident_type: v })}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectContent>{INCIDENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div><Label className="text-xs">Witness</Label><Input value={form.witness ?? ""} onChange={(e) => setForm({ ...form, witness: e.target.value })} className="h-8 text-xs" placeholder="Witness name(s)" /></div>
+            </div>
             <div><Label className="text-xs">Description</Label><Textarea rows={4} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} className="text-xs" /></div>
           </div>
           <DialogFooter>
