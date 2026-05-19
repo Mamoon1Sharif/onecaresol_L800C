@@ -53,26 +53,26 @@ export function ProfileHeader({ cg }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate("/caregivers")} className="gap-2 text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to Care Givers
-        </Button>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate(`/caregivers/${cg.id}/schedule`)} className="gap-2">
-            <CalendarDays className="h-4 w-4" /> View Schedule
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setConfirmOpen(true)}
-            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" /> Delete
-          </Button>
-        </div>
-      </div>
-
       <Card className="border border-border overflow-hidden">
-        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-8 py-6">
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/caregivers")} className="gap-2 text-muted-foreground -ml-2">
+              <ArrowLeft className="h-4 w-4" /> Back to Care Givers
+            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/caregivers/${cg.id}/schedule`)} className="gap-2">
+                <CalendarDays className="h-4 w-4" /> View Schedule
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmOpen(true)}
+                className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </Button>
+            </div>
+          </div>
           <div className="flex items-start gap-6">
             <AvatarUpload
               table="care_givers"
