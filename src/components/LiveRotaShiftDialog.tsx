@@ -369,6 +369,15 @@ export function LiveRotaShiftDialog({
               </div>
             </section>
 
+            {/* Staff + Availability */}
+            <StaffAvailabilitySection
+              caregivers={caregivers as any[]}
+              currentStaffName={current.staff}
+              shiftDate={current.date}
+            />
+
+
+
             {/* Medication */}
             <section className="border border-border rounded-sm overflow-hidden">
               <div className="border-t-2 border-t-primary/70 flex items-center justify-between px-3 py-2 bg-card">
