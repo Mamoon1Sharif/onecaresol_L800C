@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { useCareReceiver } from "@/hooks/use-care-data";
@@ -24,10 +25,30 @@ import {
   HeartPulse, ClipboardList,
 } from "lucide-react";
 
+const slugifyServiceMemberName = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 const CareReceiverProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: cr, isLoading } = useCareReceiver(id);
+
+  useEffect(() => {
+    if (!cr?.name) return;
+
+    const nameSlug = slugifyServiceMemberName(cr.name);
+    if (!nameSlug) return;
+
+    const currentPath = window.location.pathname;
+    const nextPath = `/carereceivers/${nameSlug}`;
+    if (currentPath !== nextPath) {
+      window.history.replaceState(window.history.state, "", `${nextPath}${window.location.search}${window.location.hash}`);
+    }
+  }, [cr?.name]);
   const [tab, setTab] = useState("overview");
 
   if (isLoading) {

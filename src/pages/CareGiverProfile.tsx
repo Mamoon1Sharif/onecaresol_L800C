@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { useCareGiver } from "@/hooks/use-care-data";
@@ -21,10 +22,30 @@ import {
   GraduationCap, AlertTriangle, FileText, History,
 } from "lucide-react";
 
+const slugifyCareGiverName = (name: string) =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
 const CareGiverProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { data: cg, isLoading } = useCareGiver(id);
+
+  useEffect(() => {
+    if (!cg?.name) return;
+
+    const nameSlug = slugifyCareGiverName(cg.name);
+    if (!nameSlug) return;
+
+    const currentPath = window.location.pathname;
+    const nextPath = `/caregivers/${nameSlug}`;
+    if (currentPath !== nextPath) {
+      window.history.replaceState(window.history.state, "", `${nextPath}${window.location.search}${window.location.hash}`);
+    }
+  }, [cg?.name]);
 
   if (isLoading) {
     return (
