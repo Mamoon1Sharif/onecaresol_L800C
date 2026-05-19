@@ -121,7 +121,7 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
               )}
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{cr.address || "—"}</span>
-                <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{cr.next_of_kin_phone || "—"}</span>
+                <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{(cr as any).phone_number || "—"}</span>
               </div>
             </div>
           </div>
