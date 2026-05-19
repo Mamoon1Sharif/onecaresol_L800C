@@ -34,7 +34,19 @@ const TONE_STYLES: Record<QuickAction["tone"], { icon: string; badge: string; ri
   primary: { icon: "text-primary",                    badge: "bg-primary text-primary-foreground",                     ring: "hover:bg-primary/10" },
 };
 
-const formatCount = (n: number) => (n > 999 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : String(n));
+const formatCount = (n: number) => (n > 99 ? "99+" : String(n));
+
+function useLiveClock() {
+  const [now, setNow] = useState(() => new Date());
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      const t = setInterval(() => setNow(new Date()), 1000);
+      return () => clearInterval(t);
+    }, []);
+  }
+  return now;
+}
 
 export function AppHeader() {
   const navigate = useNavigate();
