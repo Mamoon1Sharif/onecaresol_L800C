@@ -52,6 +52,93 @@ function getWeekDates(offset: number) {
   });
 }
 
+function formatClockTime(value: unknown) {
+  if (value === null || value === undefined || value === "") return "";
+  const text = String(value);
+  const match = text.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return "";
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
+}
+
+function formatHourMinute(hour: unknown, minute: unknown) {
+  const h = Number(hour);
+  const m = Number(minute);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return "";
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function minutesFromClock(value: string) {
+  const match = value.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function formatMinutes(totalMinutes: number) {
+  const normalized = ((Math.round(totalMinutes) % 1440) + 1440) % 1440;
+  const hours = Math.floor(normalized / 60);
+  const minutes = normalized % 60;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function getVisitTimeRange(visit: unknown) {
+  const v = visit as Record<string, any>;
+  const startMinute =
+    v.start_minute ??
+    v.start_minutes ??
+    v.start_mins ??
+    v.start_min ??
+    v.startMin ??
+    v.startMinute ??
+    v.minute_start ??
+    v.minutes_start ??
+    0;
+  const endMinute =
+    v.end_minute ??
+    v.end_minutes ??
+    v.end_mins ??
+    v.end_min ??
+    v.endMin ??
+    v.endMinute ??
+    v.minute_end ??
+    v.minutes_end;
+  const startFromParts = formatHourMinute(v.start_hour ?? v.startHour, startMinute);
+  const endFromParts = formatHourMinute(v.end_hour ?? v.endHour, endMinute);
+  if (startFromParts) {
+    if (endFromParts) return `${startFromParts}–${endFromParts}`;
+
+    const durationMinutes = Number(
+      v.duration_minutes ??
+        v.duration_mins ??
+        v.duration_min ??
+        v.scheduled_minutes ??
+        v.scheduled_mins ??
+        v.scheduled_duration_minutes ??
+        v.visit_duration_minutes
+    );
+    const startMinutes = minutesFromClock(startFromParts);
+    if (startMinutes !== null && Number.isFinite(durationMinutes)) {
+      return `${startFromParts}–${formatMinutes(startMinutes + durationMinutes)}`;
+    }
+  }
+  const start =
+    formatClockTime(v.start_time) ||
+    formatClockTime(v.startTime) ||
+    formatClockTime(v.scheduled_start_time) ||
+    formatClockTime(v.planned_start_time) ||
+    formatClockTime(v.visit_start_time);
+  const end =
+    formatClockTime(v.end_time) ||
+    formatClockTime(v.endTime) ||
+    formatClockTime(v.scheduled_end_time) ||
+    formatClockTime(v.planned_end_time) ||
+    formatClockTime(v.visit_end_time);
+
+  if (start && end) return `${start}–${end}`;
+
+  const endHour = Number(v.start_hour) + Number(v.duration ?? 0);
+  return `${String(v.start_hour).padStart(2, "0")}:00–${String(endHour).padStart(2, "0")}:00`;
+}
+
 const Roster = () => {
   const { toast } = useToast();
   const { data: shiftsData = [], isLoading } = useShifts();
@@ -213,7 +300,6 @@ const Roster = () => {
                           )}
                           {dayVisits.map((v) => {
                             const shiftType = v.start_hour < 12 ? "Morning" : v.start_hour < 17 ? "Afternoon" : "Night";
-                            const endHour = v.start_hour + (v.duration ?? 0);
                             return (
                               <div
                                 key={v.id}
@@ -232,7 +318,7 @@ const Roster = () => {
                                 </div>
                                 <div className="flex items-center gap-1 mt-1 opacity-75">
                                   <Clock className="h-3 w-3" />
-                                  {String(v.start_hour).padStart(2, "0")}:00–{String(endHour).padStart(2, "0")}:00
+                                  {getVisitTimeRange(v)}
                                 </div>
                               </div>
                             );
