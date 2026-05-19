@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, ChevronDown, ToggleLeft, AlertOctagon, AlertTriangle, MessageSquare, Settings, Building2 } from "lucide-react";
+import { Bell, ChevronDown, ToggleLeft, AlertOctagon, AlertTriangle, MessageSquare, Building2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
 import { useFeatureToggles } from "@/hooks/use-feature-toggles";
@@ -73,8 +73,8 @@ export function AppHeader() {
   const actions: QuickAction[] = [
     { key: "incidents",     label: "Incidents",        icon: AlertOctagon,   count: 1167, tone: "danger",  to: "/incidents" },
     { key: "conflicts",     label: "Rota Conflicts",   icon: AlertTriangle,  count: 9,    tone: "warning", to: "/rota/conflicts" },
-    { key: "messages",      label: "Messages",         icon: MessageSquare,  count: 228,  tone: "info",    to: "/messaging" },
-    { key: "notifications", label: "Notifications",    icon: Bell,           count: 1602, tone: "primary", to: "/reminders" },
+    { key: "messages",      label: "Messages",         icon: MessageSquare,  count: 228,  tone: "info",    to: "/communication-log" },
+    { key: "notifications", label: "Notifications",    icon: Bell,           count: 1602, tone: "primary", to: "/notifications" },
   ];
 
   return (
@@ -93,17 +93,21 @@ export function AppHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 md:gap-1.5">
+      <div className="flex items-center gap-3">
         {isEnabled("notifications") && (
           <TooltipProvider delayDuration={120}>
-            <div className="hidden md:flex items-center gap-2 mr-1 pr-3 border-r border-border tabular-nums">
+            {/* Live clock chip */}
+            <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-muted/70 to-muted/30 border border-border/60 tabular-nums shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_hsl(var(--primary))]" />
               <div className="flex flex-col leading-none">
-                <span className="text-[11px] font-medium text-muted-foreground">{dateStr}</span>
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{dateStr}</span>
                 <span className="text-sm font-bold text-foreground tracking-tight mt-0.5">{timeStr}</span>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-0.5 mr-1 pr-2 border-r border-border">
-              {actions.map((a) => {
+
+            {/* Connected action pill group */}
+            <div className="hidden sm:flex items-center rounded-full bg-muted/40 border border-border/60 p-1 shadow-sm backdrop-blur">
+              {actions.map((a, i) => {
                 const Icon = a.icon;
                 const tone = TONE_STYLES[a.tone];
                 return (
@@ -113,15 +117,16 @@ export function AppHeader() {
                         onClick={() => navigate(a.to)}
                         aria-label={`${a.label} (${a.count})`}
                         className={cn(
-                          "relative p-2 rounded-md transition-colors",
-                          tone.ring
+                          "relative group flex items-center gap-1.5 px-3 h-9 rounded-full transition-all duration-200",
+                          "hover:bg-background hover:shadow-md hover:scale-[1.03]",
+                          i > 0 && "ml-0.5"
                         )}
                       >
-                        <Icon className={cn("h-[18px] w-[18px]", tone.icon)} />
+                        <Icon className={cn("h-[18px] w-[18px] transition-transform group-hover:scale-110", tone.icon)} />
                         {a.count > 0 && (
                           <span
                             className={cn(
-                              "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold leading-none flex items-center justify-center shadow-sm ring-2 ring-card",
+                              "min-w-[22px] h-[18px] px-1.5 rounded-full text-[10px] font-bold leading-none flex items-center justify-center shadow-sm",
                               tone.badge
                             )}
                           >
@@ -136,18 +141,6 @@ export function AppHeader() {
                   </Tooltip>
                 );
               })}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => navigate("/settings")}
-                    aria-label="Settings"
-                    className="p-2 rounded-md hover:bg-muted transition-colors"
-                  >
-                    <Settings className="h-[18px] w-[18px] text-muted-foreground" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Settings</TooltipContent>
-              </Tooltip>
             </div>
           </TooltipProvider>
         )}
