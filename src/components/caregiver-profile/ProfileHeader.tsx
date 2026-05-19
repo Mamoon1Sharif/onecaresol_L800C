@@ -31,7 +31,7 @@ export function ProfileHeader({ cg }: Props) {
 
   const handleStatusChange = async (status: string) => {
     try {
-      await updateMutation.mutateAsync({ id: cg.id, patch: { status } as any });
+      await updateMutation.mutateAsync({ id: cg.id, status } as any);
     } catch (e: any) {
       toast({ title: "Update failed", description: e?.message ?? "Could not update status.", variant: "destructive" });
     }
