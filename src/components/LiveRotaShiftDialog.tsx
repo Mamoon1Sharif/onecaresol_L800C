@@ -1157,7 +1157,7 @@ function StaffAvailabilitySection({
   const [search, setSearch] = useState("");
   const [tableSearch, setTableSearch] = useState("");
 
-  const filtered = list.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = list.filter((s) => (s.name ?? "").toLowerCase().includes(search.toLowerCase()));
   const selected = list.find((s) => s.id === selectedId);
 
   // Deterministic mock stats per caregiver
