@@ -99,7 +99,7 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
                 })()}
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                {cr.care_type} · Age {cr.age ?? "—"}
+                Age {cr.age ?? "—"}
               </p>
               {cr.dob && (
                 <p className="text-sm text-muted-foreground mt-0.5">
@@ -107,7 +107,8 @@ export function ReceiverProfileHeader({ cr, onEdit }: Props) {
                 </p>
               )}
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
-                {cr.address && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{cr.address}</span>}
+                <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{cr.address || "—"}</span>
+                <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{cr.next_of_kin_phone || "—"}</span>
               </div>
             </div>
           </div>
