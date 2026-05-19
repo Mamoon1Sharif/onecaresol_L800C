@@ -294,17 +294,19 @@ const Conflicts = () => {
                               if (isCancelled) {
                                 setCancelledDetail(r);
                               } else {
-                                setOpenShift({
+                                const qs = new URLSearchParams({
                                   ref: r.ref,
                                   date: r.date,
                                   start: r.start,
                                   end: r.end,
                                   client: r.serviceUser,
                                   staff: r.teamMember,
-                                  serviceCall: r.serviceCall,
+                                  serviceCall: r.serviceCall ?? "",
                                   schedHrs: r.duration,
                                   clockHrs: "00:00",
+                                  from: "conflicts",
                                 });
+                                nav(`/rota/live-single?${qs.toString()}`);
                               }
                             }}
                           >{r.ref}</button>
@@ -498,7 +500,16 @@ function visitTimes(v: any): { start: string; end: string } {
 
 function ClashingRotasSection({ fromDate, toDate }: { fromDate: string; toDate: string }) {
   const [openShift, setOpenShift] = useState<any>(null);
+  const nav2 = useNavigate();
   const { data: visits = [] } = useDailyVisitsRange(fromDate, toDate);
+
+  const openLiveSingle = (p: { ref: string; visitId?: string; date: string; start: string; end: string; client: string; staff: string }) => {
+    const qs = new URLSearchParams({
+      ref: p.ref, visitId: p.visitId ?? "", date: p.date, start: p.start, end: p.end,
+      client: p.client, staff: p.staff, from: "conflicts",
+    });
+    nav2(`/rota/live-single?${qs.toString()}`);
+  };
 
   // Detect overlapping shifts assigned to the same caregiver
   const detected = useMemo<ClashRow[]>(() => {
@@ -600,7 +611,7 @@ function ClashingRotasSection({ fromDate, toDate }: { fromDate: string; toDate: 
                       className="text-destructive hover:underline font-mono"
                       onClick={() => {
                         const visit = (visits as any[]).find((v) => v.id.slice(0, 9) === p.aRef);
-                        setOpenShift({ ref: p.aRef, visitId: visit?.id, date: p.aDate, start: p.aStart, end: p.aEnd, client: p.aClient, staff: p.staff });
+                        openLiveSingle({ ref: p.aRef, visitId: visit?.id, date: p.aDate, start: p.aStart, end: p.aEnd, client: p.aClient, staff: p.staff });
                       }}
                     >{p.aRef}</button>
                   </td>
@@ -615,7 +626,7 @@ function ClashingRotasSection({ fromDate, toDate }: { fromDate: string; toDate: 
                       className="text-destructive hover:underline font-mono"
                       onClick={() => {
                         const visit = (visits as any[]).find((v) => v.id.slice(0, 9) === p.bRef);
-                        setOpenShift({ ref: p.bRef, visitId: visit?.id, date: p.bDate, start: p.bStart, end: p.bEnd, client: p.bClient, staff: p.staff });
+                        openLiveSingle({ ref: p.bRef, visitId: visit?.id, date: p.bDate, start: p.bStart, end: p.bEnd, client: p.bClient, staff: p.staff });
                       }}
                     >{p.bRef}</button>
                   </td>
