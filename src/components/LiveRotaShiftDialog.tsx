@@ -1131,14 +1131,16 @@ function StaffAvailabilitySection({
   }, 0);
   const totalDurStr = `${String(Math.floor(totalDur / 60)).padStart(2, "0")}:${String(totalDur % 60).padStart(2, "0")}`;
 
+  const [confirmAssign, setConfirmAssign] = useState(false);
+
   return (
-    <section className="border border-border rounded-sm overflow-hidden">
+    <section id="staff-availability-section" className="border border-border rounded-sm overflow-hidden transition-shadow scroll-mt-20">
       <div className="border-t-2 border-t-primary/70 grid grid-cols-1 lg:grid-cols-[280px_1fr] divide-y lg:divide-y-0 lg:divide-x divide-border">
-        {/* Staff list pane */}
+        {/* Care Givers list pane */}
         <div className="bg-card">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <span className="text-muted-foreground">👤</span> Staff
+              <span className="text-muted-foreground">👤</span> Care Givers
             </h3>
             <Button size="sm" className="h-7 bg-success hover:bg-success/90 text-success-foreground">View More</Button>
           </div>
@@ -1146,13 +1148,13 @@ function StaffAvailabilitySection({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Visible Staff..."
+              placeholder="Search Visible Care Givers..."
               className="h-8 text-xs"
             />
           </div>
           <div className="overflow-y-auto divide-y divide-border" style={{ maxHeight: "calc(100vh - 280px)" }}>
             {filtered.length === 0 && (
-              <p className="text-xs text-muted-foreground p-3 text-center italic">No staff found.</p>
+              <p className="text-xs text-muted-foreground p-3 text-center italic">No care givers found.</p>
             )}
             {filtered.map((s) => {
               const isSel = s.id === selectedId;
@@ -1183,15 +1185,20 @@ function StaffAvailabilitySection({
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               📅 Availability
             </h3>
-            <Button size="sm" className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground">
-              <Plus className="h-3 w-3" /> Link To Call
+            <Button
+              size="sm"
+              disabled={!selected}
+              className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
+              onClick={() => selected && setConfirmAssign(true)}
+            >
+              <Plus className="h-3 w-3" /> Assign this Shift
             </Button>
           </div>
 
           {!selected ? (
             <div className="p-10 text-center">
-              <p className="text-lg font-semibold text-foreground">Select Staff Member</p>
-              <p className="text-xs text-warning mt-1">Select a staff member on the left to show their availability for this call</p>
+              <p className="text-lg font-semibold text-foreground">Select Care Giver</p>
+              <p className="text-xs text-warning mt-1">Select a care giver on the left to show their availability for this call</p>
             </div>
           ) : (
             <div className="p-4 space-y-4">
