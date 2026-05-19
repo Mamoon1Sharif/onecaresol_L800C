@@ -55,7 +55,8 @@ export function AppHeader() {
   const { data: company } = useCurrentCompany();
   const [togglesOpen, setTogglesOpen] = useState(false);
 
-  const companyName = (company as any)?.companies?.name ?? "CareAdmin";
+  const rawCompanyName = (company as any)?.companies?.name ?? "CareAdmin";
+  const companyName = rawCompanyName === "Ted491" ? "MHS Health Care Solutions" : rawCompanyName;
   const now = useLiveClock();
   const dateStr = now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   const timeStr = now.toLocaleTimeString("en-GB", { hour12: false });
