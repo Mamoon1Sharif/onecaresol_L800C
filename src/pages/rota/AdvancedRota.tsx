@@ -306,8 +306,30 @@ export default function AdvancedRota() {
       allShifts.push(ov ? { ...base, ...ov } : base);
     }
 
+    // Inject unallocated shifts from the Conflicts pool
+    const unassignedPool = buildUnassignedShifts(careReceivers as any);
+    for (const u of unassignedPool) {
+      if (isShiftAssigned(u.ref)) continue;
+      const dayIdx = days.findIndex((d) => formatDateISO(d) === u.dateIso);
+      if (dayIdx < 0) continue;
+      const id = `unassigned-${u.ref}`;
+      const base: Shift = {
+        id,
+        staff: "",
+        start: timeToHours(u.start),
+        end: timeToHours(u.end),
+        client: u.serviceUser,
+        ref: u.ref,
+        service: u.serviceCall || "Visit",
+        status: "scheduled",
+        dayIndex: dayIdx,
+      } as Shift;
+      const ov = overrides[id];
+      allShifts.push(ov ? { ...base, ...ov } : base);
+    }
+
     return allShifts;
-  }, [rawVisits, days, overrides, assignedTick]);
+  }, [rawVisits, days, overrides, assignedTick, careReceivers]);
 
   // Detect per-caregiver overlapping shifts (conflicts).
   const conflicts = useMemo(() => {
