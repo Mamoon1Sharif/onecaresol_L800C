@@ -74,6 +74,9 @@ export function ProfileHeader({ cg }: Props) {
               <ArrowLeft className="h-4 w-4" /> Back to Care Givers
             </Button>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setTagsOpen(true)} className="gap-2">
+                <Tag className="h-4 w-4" /> Edit Tags
+              </Button>
               <Button variant="outline" size="sm" onClick={() => navigate(`/caregivers/${cg.id}/schedule`)} className="gap-2">
                 <CalendarDays className="h-4 w-4" /> View Schedule
               </Button>
