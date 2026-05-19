@@ -1276,6 +1276,28 @@ function StaffAvailabilitySection({
           )}
         </div>
       </div>
+
+      <AlertDialog open={confirmAssign} onOpenChange={setConfirmAssign}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Assign this shift?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Assign <span className="font-medium text-foreground">{selected?.name}</span> to shift <span className="font-mono">{shiftRef ?? ""}</span> on {shiftDate || "—"}? It will be removed from the shifts missing care giver list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selected) onAssign?.(selected.name);
+                setConfirmAssign(false);
+              }}
+            >
+              Confirm Assign
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
