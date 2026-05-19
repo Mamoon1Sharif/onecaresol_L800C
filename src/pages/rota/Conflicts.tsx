@@ -145,12 +145,13 @@ const Conflicts = () => {
       // Once a care giver has been assigned, the shift is resolved and should
       // no longer appear in the conflicts list at all.
       if (assignments[r.id]) return false;
+      if (persistedAssigned[r.ref]) return false;
       if (filter === "cancelled" && !r.isCancelled) return false;
       if (filter === "unallocated" && r.teamMember !== "Unallocated") return false;
       if (search && !r.serviceUser.toLowerCase().includes(search.toLowerCase()) && !r.ref.includes(search)) return false;
       return true;
     });
-  }, [allRows, filter, search, assignments]);
+  }, [allRows, filter, search, assignments, persistedAssigned]);
 
   const totalMissing = rows.filter((r) => r.teamMember === "Unallocated").length;
 
