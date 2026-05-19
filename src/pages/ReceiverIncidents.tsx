@@ -139,10 +139,12 @@ export default function ReceiverIncidents() {
       <thead className="bg-muted/40">
         <tr className="text-left text-foreground">
           <th className="px-3 py-2 font-semibold">Incident Ref</th>
+          <th className="px-3 py-2 font-semibold">Type</th>
           <th className="px-3 py-2 font-semibold">Severity</th>
           <th className="px-3 py-2 font-semibold">Creation</th>
           <th className="px-3 py-2 font-semibold">Created By</th>
           <th className="px-3 py-2 font-semibold">Created For</th>
+          <th className="px-3 py-2 font-semibold">Witness</th>
           <th className="px-3 py-2 font-semibold">Description</th>
           <th className="px-3 py-2 font-semibold text-right">Actions</th>
         </tr>
@@ -151,10 +153,12 @@ export default function ReceiverIncidents() {
         {rows.map((i) => (
           <tr key={i.id} className="border-t border-border hover:bg-muted/20">
             <td className="px-3 py-2 font-medium text-foreground">{i.incident_ref}</td>
+            <td className="px-3 py-2 text-foreground">{i.incident_type || "—"}</td>
             <td className="px-3 py-2">{sevBadge(i.severity)}</td>
             <td className="px-3 py-2 text-muted-foreground">{format(parseISO(i.incident_date), "dd/MM/yyyy HH:mm")}</td>
             <td className="px-3 py-2 text-foreground">{i.created_by || "—"}</td>
             <td className="px-3 py-2 text-foreground">{i.created_for || "—"}</td>
+            <td className="px-3 py-2 text-foreground">{i.witness || "—"}</td>
             <td className="px-3 py-2 text-foreground max-w-md">{i.description}</td>
             <td className="px-3 py-2">
               <div className="flex items-center gap-1 justify-end">
