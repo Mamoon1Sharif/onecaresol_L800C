@@ -62,7 +62,7 @@ export default function Notifications() {
   const total = c.absences + c.certs + c.conflicts + c.meds + c.reminders + c.incidents + c.messages;
 
   const rows: Row[] = [
-    { key: "absences",  label: "Staff Absence Requests",     icon: Plane,         tone: "text-sky-500 bg-sky-500/10",         to: "/holidays-absence",  count: c.absences },
+    { key: "absences",  label: "Staff Absence Requests",     icon: Plane,         tone: "text-sky-500 bg-sky-500/10",         to: "/staff-absence-requests",  count: c.absences },
     { key: "certs",     label: "Expiring Certificates",      icon: FileText,      tone: "text-amber-500 bg-amber-500/10",     to: "/caregivers",        count: c.certs },
     { key: "conflicts", label: "Conflicting Templates",      icon: Handshake,     tone: "text-emerald-600 bg-emerald-500/10", to: "/rota/conflicts",    count: c.conflicts },
     { key: "meds",      label: "Medication Not Administered",icon: Pill,          tone: "text-rose-500 bg-rose-500/10",       to: "/incidents",         count: c.meds },

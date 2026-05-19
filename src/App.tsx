@@ -70,6 +70,8 @@ import MyProfile from "./pages/MyProfile.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import BlankPage from "./pages/BlankPage.tsx";
 import Notifications from "./pages/Notifications.tsx";
+import StaffAbsenceRequests from "./pages/StaffAbsenceRequests.tsx";
+import StaffContracts from "./pages/StaffContracts.tsx";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +91,8 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/incidents" element={<ProtectedRoute><BlankPage title="Incidents" /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="/staff-absence-requests" element={<ProtectedRoute><StaffAbsenceRequests /></ProtectedRoute>} />
+            <Route path="/staff-contracts" element={<ProtectedRoute><StaffContracts /></ProtectedRoute>} />
             <Route path="/insights" element={<ProtectedRoute><InsightsDashboard /></ProtectedRoute>} />
             <Route path="/bookings" element={<ProtectedRoute><Bookings /></ProtectedRoute>} />
             <Route path="/caregivers" element={<ProtectedRoute><CareGivers /></ProtectedRoute>} />
