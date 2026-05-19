@@ -83,15 +83,24 @@ export function ProfileHeader({ cg }: Props) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-foreground">{cg.name}</h1>
-                <Badge
-                  variant={cg.status === "Active" ? "default" : (cg.status === "Onboarding" ? "outline" : "secondary")}
-                  className={cn(
-                    cg.status === "Active" && "bg-success/15 text-success border-0",
-                    cg.status === "Onboarding" && "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800"
-                  )}
-                >
-                  {cg.status}
-                </Badge>
+                <Select value={cg.status ?? ""} onValueChange={handleStatusChange}>
+                  <SelectTrigger
+                    className={cn(
+                      "h-7 w-auto gap-1.5 rounded-full border px-3 py-0 text-xs font-medium",
+                      cg.status === "Active" && "bg-success/15 text-success border-success/20",
+                      cg.status === "Onboarding" && "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800",
+                      cg.status === "Inactive" && "bg-muted text-muted-foreground border-border",
+                    )}
+                  >
+                    <Activity className="h-3 w-3" />
+                    <SelectValue placeholder="Set status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CAREGIVER_STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <p className="text-sm text-muted-foreground mt-1">{cg.role_title || "Homecare Assistant"}</p>
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
