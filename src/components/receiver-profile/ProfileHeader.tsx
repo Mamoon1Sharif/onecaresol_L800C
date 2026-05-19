@@ -7,7 +7,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Heart, MapPin, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, MapPin, Phone, Pencil, Trash2, Loader2 } from "lucide-react";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { getCareReceiverAvatar } from "@/lib/avatars";
 import { useDeleteCareReceiver } from "@/hooks/use-care-data";
