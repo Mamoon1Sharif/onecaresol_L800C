@@ -27,6 +27,7 @@ import { VisitDetailDialog } from "@/components/VisitDetailDialog";
 import { CareGiverProfileDialog } from "@/components/CareGiverProfileDialog";
 import { CareReceiverProfileDialog } from "@/components/CareReceiverProfileDialog";
 import { getVisitStatus } from "@/lib/visit-status-utils";
+import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
 
 // Reusable tooltip-wrapped icon for table headers/cells
 function IconCell({
