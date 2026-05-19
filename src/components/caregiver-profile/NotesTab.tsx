@@ -385,7 +385,7 @@ export function NotesTab({ careGiverId }: Props) {
                 <TableRow className="bg-muted/20">
                   <TableHead className="w-[110px] font-semibold">Rota Ref</TableHead>
                   <TableHead className="w-[110px] font-semibold">Note Ref</TableHead>
-                  <TableHead className="w-[140px] font-semibold">Staff</TableHead>
+                  <TableHead className="w-[140px] font-semibold">Care Giver</TableHead>
                   <TableHead className="w-[140px] font-semibold">Created</TableHead>
                   <TableHead className="font-semibold">Note</TableHead>
                 </TableRow>
