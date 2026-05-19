@@ -284,7 +284,7 @@ const DailyRoster = () => {
       if (search && !r.serviceUser.toLowerCase().includes(search.toLowerCase()) && !r.teamMember.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [rawVisits, dayOffset, dateStr, teamFilter, serviceFilter, search, nowTick, assignedTick]);
+  }, [rawVisits, dayOffset, dateStr, teamFilter, serviceFilter, search, nowTick, assignedTick, careReceivers]);
 
   const schedHours = rows.reduce((acc, r) => {
     const [h, m] = r.duration.split(":").map(Number);
