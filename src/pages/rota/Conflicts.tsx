@@ -500,7 +500,16 @@ function visitTimes(v: any): { start: string; end: string } {
 
 function ClashingRotasSection({ fromDate, toDate }: { fromDate: string; toDate: string }) {
   const [openShift, setOpenShift] = useState<any>(null);
+  const nav2 = useNavigate();
   const { data: visits = [] } = useDailyVisitsRange(fromDate, toDate);
+
+  const openLiveSingle = (p: { ref: string; visitId?: string; date: string; start: string; end: string; client: string; staff: string }) => {
+    const qs = new URLSearchParams({
+      ref: p.ref, visitId: p.visitId ?? "", date: p.date, start: p.start, end: p.end,
+      client: p.client, staff: p.staff, from: "conflicts",
+    });
+    nav2(`/rota/live-single?${qs.toString()}`);
+  };
 
   // Detect overlapping shifts assigned to the same caregiver
   const detected = useMemo<ClashRow[]>(() => {
