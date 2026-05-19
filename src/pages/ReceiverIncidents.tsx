@@ -94,6 +94,8 @@ export default function ReceiverIncidents() {
         created_by: payload.created_by,
         created_for: payload.created_for,
         description: payload.description,
+        incident_type: payload.incident_type ?? null,
+        witness: payload.witness ?? null,
         incident_date: payload.incident_date ? new Date(payload.incident_date).toISOString() : new Date().toISOString(),
         closed_at: payload.status === "Closed" ? (payload.closed_at ?? new Date().toISOString()) : null,
       };
