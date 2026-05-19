@@ -228,9 +228,32 @@ const AddRota = () => {
 
   const startMins = parseInt(form.startH) * 60 + parseInt(form.startM);
   let endMinsAdj = parseInt(form.endH) * 60 + parseInt(form.endM);
-  if (endMinsAdj < startMins) endMinsAdj += 24 * 60;
+  if (endMinsAdj <= startMins) endMinsAdj += 24 * 60;
   const durationMinutes = endMinsAdj - startMins;
-  const duration = `${String(Math.floor(durationMinutes / 60)).padStart(2, "0")}:${String(durationMinutes % 60).padStart(2, "0")}`;
+  const endsNextDay = endMinsAdj >= 24 * 60;
+  const formatDurationLong = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m} minute${m === 1 ? "" : "s"}`;
+    if (m === 0) return `${h} hour${h === 1 ? "" : "s"}`;
+    return `${h} hour${h === 1 ? "" : "s"} ${m} minute${m === 1 ? "" : "s"}`;
+  };
+  const duration = formatDurationLong(durationMinutes);
+
+  // When start time changes, keep the same duration so the end time follows.
+  const updateStart = (patch: { startH?: string; startM?: string }) => {
+    const next = { ...form, ...patch };
+    const ns = parseInt(next.startH) * 60 + parseInt(next.startM);
+    const total = (ns + Math.max(15, durationMinutes)) % (24 * 60);
+    next.endH = String(Math.floor(total / 60)).padStart(2, "0");
+    next.endM = String(total % 60).padStart(2, "0");
+    setForm(next);
+  };
+
+  // When end time changes, ensure it stays after the start (wrap to next day if needed).
+  const updateEnd = (patch: { endH?: string; endM?: string }) => {
+    setForm({ ...form, ...patch });
+  };
 
   const handleDurationSlider = (val: number[]) => {
     const total = (startMins + val[0]) % (24 * 60);
@@ -630,17 +653,20 @@ const AddRota = () => {
                   <TimePicker
                     h={form.startH}
                     m={form.startM}
-                    onH={(v) => setForm({ ...form, startH: v })}
-                    onM={(v) => setForm({ ...form, startM: v })}
+                    onH={(v) => updateStart({ startH: v })}
+                    onM={(v) => updateStart({ startM: v })}
                   />
                 </Field>
                 <Field label="End time" required>
                   <TimePicker
                     h={form.endH}
                     m={form.endM}
-                    onH={(v) => setForm({ ...form, endH: v })}
-                    onM={(v) => setForm({ ...form, endM: v })}
+                    onH={(v) => updateEnd({ endH: v })}
+                    onM={(v) => updateEnd({ endM: v })}
                   />
+                  {endsNextDay && (
+                    <p className="text-[11px] text-primary mt-1 font-medium">Ends next day</p>
+                  )}
                 </Field>
               </div>
 
