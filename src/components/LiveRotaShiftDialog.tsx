@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCareGivers } from "@/hooks/use-care-data";
 import { removePendingClashesForStaff, removePendingClashesForRef } from "@/pages/rota/Conflicts";
 import { useQueryClient } from "@tanstack/react-query";
+import { getCareGiverAvatar } from "@/lib/avatars";
 
 export type LiveRotaShift = {
   visitId?: string;
@@ -217,56 +218,70 @@ export function LiveRotaShiftDialog({
             </section>
 
             {/* Assigned Care Givers */}
-            <section className="border border-border rounded-sm overflow-hidden">
-              <div className="border-t-2 border-t-primary/70 px-3 py-2 bg-card">
-                <h3 className="text-sm font-semibold text-foreground">Assigned Care Givers</h3>
-              </div>
-              <div className="p-4 flex gap-6">
-                {removed ? (
-                  <div className="flex items-center gap-3">
-                    <p className="text-sm text-muted-foreground italic">No care giver assigned.</p>
-                    <Button size="sm" onClick={() => setAssignOpen(true)}>
-                      <Plus className="w-3 h-3 mr-1" /> Assign Caregiver
-                    </Button>
+            {(() => {
+              const isUnassigned = removed || !current.staff || current.staff.toLowerCase() === "unallocated";
+              const assignedCg = !isUnassigned
+                ? caregivers.find((c) => c.name?.toLowerCase() === current.staff.toLowerCase())
+                : undefined;
+              const avatarSrc = assignedCg ? getCareGiverAvatar(assignedCg.id, assignedCg.avatar_url) : null;
+              return (
+                <section className="border border-border rounded-sm overflow-hidden">
+                  <div className="border-t-2 border-t-primary/70 px-3 py-2 bg-card">
+                    <h3 className="text-sm font-semibold text-foreground">Assigned Care Givers</h3>
                   </div>
-                ) : (
-                  <>
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-[140px] h-[140px] rounded-sm border border-border bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                        {current.staff}
-                      </div>
-                      <Button
-                        size="sm"
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground h-8 w-[140px]"
-                        onClick={() => setConfirmRemove(true)}
-                      >
-                        ↑ Remove Care Giver
-                      </Button>
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-primary font-medium mb-2">{current.staff}</div>
-                      <div className="space-y-1 text-sm">
+                  <div className="p-4">
+                    {isUnassigned ? (
+                      <>
                         <button
-                          onClick={() => setClockEdit("in")}
-                          className="text-success hover:underline block"
+                          type="button"
+                          onClick={() => setAssignOpen(true)}
+                          className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors"
                         >
-                          - Clock In
+                          <span className="text-base font-medium">Add Staff</span>
+                          <span className="text-xs mt-1">Assign Staff Member</span>
                         </button>
-                        <button
-                          onClick={() => setClockEdit("out")}
-                          className="text-success hover:underline block"
-                        >
-                          - Clock Out
-                        </button>
+                        <p className="text-xs text-primary mt-4 text-center">
+                          If clock in or out distances are not showing, it means your team member has location services off on their mobile phone.
+                        </p>
+                      </>
+                    ) : (
+                      <div className="flex gap-6">
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-[140px] h-[140px] rounded-sm border border-border bg-muted overflow-hidden flex items-center justify-center">
+                            {avatarSrc ? (
+                              <img src={avatarSrc} alt={current.staff} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-muted-foreground text-xs px-2 text-center">{current.staff}</span>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground h-8 w-[140px]"
+                            onClick={() => setConfirmRemove(true)}
+                          >
+                            ↑ Remove Care Giver
+                          </Button>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-primary font-medium mb-2">{current.staff}</div>
+                          <div className="space-y-1 text-sm">
+                            <button onClick={() => setClockEdit("in")} className="text-success hover:underline block">
+                              - Clock In
+                            </button>
+                            <button onClick={() => setClockEdit("out")} className="text-success hover:underline block">
+                              - Clock Out
+                            </button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-6 text-center">
+                            If clock in or out distances are not showing, it means your care giver has location services off on their mobile phone.
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-6 text-center">
-                        If clock in or out distances are not showing, it means your care giver has location services off on their mobile phone.
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </section>
+                    )}
+                  </div>
+                </section>
+              );
+            })()}
 
             {/* Rota Locks */}
             <section className="border border-border rounded-sm overflow-hidden">
