@@ -114,6 +114,7 @@ const App = () => (
             <Route path="/rota/printable" element={<ProtectedRoute><PrintableRota /></ProtectedRoute>} />
             <Route path="/rota/build" element={<ProtectedRoute><BuildRota /></ProtectedRoute>} />
             <Route path="/rota/conflicts" element={<ProtectedRoute><Conflicts /></ProtectedRoute>} />
+            <Route path="/rota/live-single" element={<ProtectedRoute><LiveSingleRota /></ProtectedRoute>} />
             <Route path="/holidays-absence" element={<ProtectedRoute><HolidaysAbsence /></ProtectedRoute>} />
             <Route path="/location-tracking" element={<ProtectedRoute><LocationTracking /></ProtectedRoute>} />
             <Route path="/communication-log" element={<ProtectedRoute><CommunicationLog /></ProtectedRoute>} />
