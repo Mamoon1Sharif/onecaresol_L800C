@@ -60,7 +60,7 @@ export const FEATURE_LABELS: Record<FeatureKey, { label: string; description: st
   },
 };
 
-const STORAGE_KEY = "feature_toggles_v1";
+const STORAGE_KEY = "feature_toggles_v2";
 const DEFAULTS: Record<FeatureKey, boolean> = {
   notifications: true,
   insights: false,
