@@ -246,7 +246,37 @@ const DailyRoster = () => {
       } as any;
     });
 
-    const all = [...mapped, ...synthetic];
+    // Inject unallocated shifts from the Conflicts pool for this date
+    const unassignedForDay = getUnassignedShiftsForDate(careReceivers as any, dateStr);
+    const unassigned = unassignedForDay.map((u) => ({
+      id: `unassigned-${u.ref}`,
+      ref: u.ref,
+      date: getDateShort(dayOffset),
+      status: u.status,
+      isFuture: true,
+      accepted: false,
+      serviceUser: u.serviceUser,
+      serviceUserRaw: u.serviceUser.split(" - ")[0],
+      scheduledStart: u.start,
+      scheduledEnd: u.end,
+      duration: u.duration,
+      actualStart: "—",
+      actualEnd: "—",
+      actualDuration: "—",
+      checkInLat: null,
+      checkInLng: null,
+      teamMember: "—",
+      serviceCall: u.serviceCall,
+      week: u.week,
+      weekNum: u.weekNum,
+      receiver_id: u.receiverId || null,
+      rawDate: u.dateIso,
+      rawVisit: null,
+      receiver: { name: u.serviceUser.split(" - ")[0] },
+      caregiver: null,
+    } as any));
+
+    const all = [...mapped, ...synthetic, ...unassigned];
 
     return all.filter((r) => {
       if (teamFilter && r.teamMember !== teamFilter) return false;
