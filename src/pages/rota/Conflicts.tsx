@@ -18,6 +18,7 @@ import {
 import { useCareReceivers, useCareGivers, useDailyVisitsRange } from "@/hooks/use-care-data";
 import { toast } from "sonner";
 import { LiveRotaShiftDialog } from "@/components/LiveRotaShiftDialog";
+import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
 
 function IconCell({
   icon: Icon, label, className = "h-3.5 w-3.5 text-muted-foreground/70",
