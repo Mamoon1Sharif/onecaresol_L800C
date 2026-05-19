@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plane, FileText, Handshake, Pill, Bell, AlertOctagon, AlertTriangle, MessageSquare, RefreshCw } from "lucide-react";
+import { Plane, FileText, Pill, Bell, AlertOctagon, AlertTriangle, MessageSquare, RefreshCw } from "lucide-react";
 import { AppLayout } from "@/components/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
