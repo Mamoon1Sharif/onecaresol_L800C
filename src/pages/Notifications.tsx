@@ -32,7 +32,7 @@ function useLiveCounts() {
         supabase.from("caregiver_holidays").select("id", head).eq("status", "Pending"),
         supabase.from("caregiver_qualifications").select("id", head).lte("expiry_date", in60d),
         supabase.from("caregiver_incidents").select("id", head),
-        supabase.from("shift_task_medician").select("id", head).eq("status", "missed"),
+        supabase.from("shift_task_medician").select("id", head).eq("is_completed", false),
         supabase.from("caregiver_reminders").select("id", head),
         supabase.from("receiver_reminders").select("id", head),
         supabase.from("receiver_incidents").select("id", head),
