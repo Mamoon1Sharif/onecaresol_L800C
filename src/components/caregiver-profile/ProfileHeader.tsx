@@ -56,6 +56,15 @@ export function ProfileHeader({ cg }: Props) {
     }
   };
 
+  const handleSaveTags = async (next: string[]) => {
+    try {
+      await updateMutation.mutateAsync({ id: cg.id, tags: next } as any);
+      toast({ title: "Tags updated", description: `${next.length} tag${next.length === 1 ? "" : "s"} saved.` });
+    } catch (e: any) {
+      toast({ title: "Update failed", description: e?.message ?? "Could not save tags.", variant: "destructive" });
+    }
+  };
+
   return (
     <>
       <Card className="border border-border overflow-hidden">
