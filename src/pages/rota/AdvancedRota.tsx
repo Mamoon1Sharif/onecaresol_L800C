@@ -315,7 +315,7 @@ export default function AdvancedRota() {
       const id = `unassigned-${u.ref}`;
       const base: Shift = {
         id,
-        staff: "",
+        staff: "Unassigned Shifts",
         start: timeToHours(u.start),
         end: timeToHours(u.end),
         client: u.serviceUser,
