@@ -112,6 +112,20 @@ const Conflicts = () => {
   const [assignFor, setAssignFor] = useState<any | null>(null);
   const [assignSelected, setAssignSelected] = useState<string>("");
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [persistedAssigned, setPersistedAssigned] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem("assigned_shifts_v1") || "{}"); } catch { return {}; }
+  });
+  useEffect(() => {
+    const reload = () => {
+      try { setPersistedAssigned(JSON.parse(localStorage.getItem("assigned_shifts_v1") || "{}")); } catch {}
+    };
+    window.addEventListener("focus", reload);
+    window.addEventListener("storage", reload);
+    return () => {
+      window.removeEventListener("focus", reload);
+      window.removeEventListener("storage", reload);
+    };
+  }, []);
   const [openShift, setOpenShift] = useState<any>(null);
 
   const today = new Date();
@@ -131,12 +145,13 @@ const Conflicts = () => {
       // Once a care giver has been assigned, the shift is resolved and should
       // no longer appear in the conflicts list at all.
       if (assignments[r.id]) return false;
+      if (persistedAssigned[r.ref]) return false;
       if (filter === "cancelled" && !r.isCancelled) return false;
       if (filter === "unallocated" && r.teamMember !== "Unallocated") return false;
       if (search && !r.serviceUser.toLowerCase().includes(search.toLowerCase()) && !r.ref.includes(search)) return false;
       return true;
     });
-  }, [allRows, filter, search, assignments]);
+  }, [allRows, filter, search, assignments, persistedAssigned]);
 
   const totalMissing = rows.filter((r) => r.teamMember === "Unallocated").length;
 

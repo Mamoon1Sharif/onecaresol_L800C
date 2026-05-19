@@ -234,14 +234,21 @@ export function LiveRotaShiftDialog({
                       <>
                         <button
                           type="button"
-                          onClick={() => setAssignOpen(true)}
+                          onClick={() => {
+                            const el = document.getElementById("staff-availability-section");
+                            if (el) {
+                              el.scrollIntoView({ behavior: "smooth", block: "start" });
+                              el.classList.add("ring-2", "ring-primary");
+                              setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1600);
+                            }
+                          }}
                           className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors"
                         >
-                          <span className="text-base font-medium">Add Staff</span>
-                          <span className="text-xs mt-1">Assign Staff Member</span>
+                          <span className="text-base font-medium">Add Care Giver/s</span>
+                          <span className="text-xs mt-1">Assign a Care Giver to this shift</span>
                         </button>
                         <p className="text-xs text-primary mt-4 text-center">
-                          If clock in or out distances are not showing, it means your team member has location services off on their mobile phone.
+                          If clock in or out distances are not showing, it means your care giver has location services off on their mobile phone.
                         </p>
                       </>
                     ) : (
@@ -384,11 +391,24 @@ export function LiveRotaShiftDialog({
               </div>
             </section>
 
-            {/* Staff + Availability */}
+            {/* Care Givers + Availability */}
             <StaffAvailabilitySection
               caregivers={caregivers as any[]}
               currentStaffName={current.staff}
               shiftDate={current.date}
+              shiftRef={current.ref}
+              onAssign={(name) => {
+                setCurrent({ ...current, staff: name });
+                setRemoved(false);
+                try {
+                  const KEY = "assigned_shifts_v1";
+                  const map = JSON.parse(localStorage.getItem(KEY) || "{}");
+                  map[current.ref] = name;
+                  localStorage.setItem(KEY, JSON.stringify(map));
+                } catch {}
+                removePendingClashesForRef(current.ref);
+                toast.success(`${name} assigned to shift ${current.ref}`);
+              }}
             />
 
 
@@ -1069,10 +1089,14 @@ function StaffAvailabilitySection({
   caregivers,
   currentStaffName,
   shiftDate,
+  shiftRef,
+  onAssign,
 }: {
   caregivers: any[];
   currentStaffName: string;
   shiftDate: string;
+  shiftRef?: string;
+  onAssign?: (name: string) => void;
 }) {
   const list: StaffRow[] = (caregivers ?? []).slice(0, 12).map((cg, i) => ({
     id: cg.id,
@@ -1107,14 +1131,16 @@ function StaffAvailabilitySection({
   }, 0);
   const totalDurStr = `${String(Math.floor(totalDur / 60)).padStart(2, "0")}:${String(totalDur % 60).padStart(2, "0")}`;
 
+  const [confirmAssign, setConfirmAssign] = useState(false);
+
   return (
-    <section className="border border-border rounded-sm overflow-hidden">
+    <section id="staff-availability-section" className="border border-border rounded-sm overflow-hidden transition-shadow scroll-mt-20">
       <div className="border-t-2 border-t-primary/70 grid grid-cols-1 lg:grid-cols-[280px_1fr] divide-y lg:divide-y-0 lg:divide-x divide-border">
-        {/* Staff list pane */}
+        {/* Care Givers list pane */}
         <div className="bg-card">
           <div className="flex items-center justify-between px-3 py-2 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-              <span className="text-muted-foreground">👤</span> Staff
+              <span className="text-muted-foreground">👤</span> Care Givers
             </h3>
             <Button size="sm" className="h-7 bg-success hover:bg-success/90 text-success-foreground">View More</Button>
           </div>
@@ -1122,13 +1148,13 @@ function StaffAvailabilitySection({
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search Visible Staff..."
+              placeholder="Search Visible Care Givers..."
               className="h-8 text-xs"
             />
           </div>
           <div className="overflow-y-auto divide-y divide-border" style={{ maxHeight: "calc(100vh - 280px)" }}>
             {filtered.length === 0 && (
-              <p className="text-xs text-muted-foreground p-3 text-center italic">No staff found.</p>
+              <p className="text-xs text-muted-foreground p-3 text-center italic">No care givers found.</p>
             )}
             {filtered.map((s) => {
               const isSel = s.id === selectedId;
@@ -1159,15 +1185,20 @@ function StaffAvailabilitySection({
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
               📅 Availability
             </h3>
-            <Button size="sm" className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground">
-              <Plus className="h-3 w-3" /> Link To Call
+            <Button
+              size="sm"
+              disabled={!selected}
+              className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
+              onClick={() => selected && setConfirmAssign(true)}
+            >
+              <Plus className="h-3 w-3" /> Assign this Shift
             </Button>
           </div>
 
           {!selected ? (
             <div className="p-10 text-center">
-              <p className="text-lg font-semibold text-foreground">Select Staff Member</p>
-              <p className="text-xs text-warning mt-1">Select a staff member on the left to show their availability for this call</p>
+              <p className="text-lg font-semibold text-foreground">Select Care Giver</p>
+              <p className="text-xs text-warning mt-1">Select a care giver on the left to show their availability for this call</p>
             </div>
           ) : (
             <div className="p-4 space-y-4">
@@ -1245,6 +1276,28 @@ function StaffAvailabilitySection({
           )}
         </div>
       </div>
+
+      <AlertDialog open={confirmAssign} onOpenChange={setConfirmAssign}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Assign this shift?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Assign <span className="font-medium text-foreground">{selected?.name}</span> to shift <span className="font-mono">{shiftRef ?? ""}</span> on {shiftDate || "—"}? It will be removed from the shifts missing care giver list.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selected) onAssign?.(selected.name);
+                setConfirmAssign(false);
+              }}
+            >
+              Confirm Assign
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }
