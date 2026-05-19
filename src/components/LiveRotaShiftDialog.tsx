@@ -436,12 +436,16 @@ export function LiveRotaShiftDialog({
               onAssign={(name) => {
                 setCurrent({ ...current, staff: name });
                 setRemoved(false);
-                try {
-                  const KEY = "assigned_shifts_v1";
-                  const map = JSON.parse(localStorage.getItem(KEY) || "{}");
-                  map[current.ref] = name;
-                  localStorage.setItem(KEY, JSON.stringify(map));
-                } catch {}
+                saveAssignedShift({
+                  ref: current.ref,
+                  dateIso: toIsoDate(current.date),
+                  start: current.start,
+                  end: current.end,
+                  client: current.client,
+                  staff: name,
+                  serviceCall: current.serviceCall,
+                  schedHrs: current.schedHrs,
+                });
                 removePendingClashesForRef(current.ref);
                 toast.success(`${name} assigned to shift ${current.ref}`);
               }}
