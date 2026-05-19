@@ -88,9 +88,45 @@ export function LiveRotaShiftDialog({
   const shiftRowText = `${current.ref} ${current.client} ${current.staff} ${current.serviceCall ?? ""}`;
   const showShiftRow = matchesShiftSearch(shiftRowText);
 
-  const filteredMeds = INITIAL_MEDS.filter((m) => {
-    const inFilter = medFilter === "all" || m.name === medFilter;
-    const inSearch = !medSearch || m.name.toLowerCase().includes(medSearch.toLowerCase());
+  // Live medications for this shift's client
+  const clientName = (current.client || "").split(" - ")[0].trim();
+  const { data: liveMeds = [] } = useQuery({
+    queryKey: ["shift_medications", clientName, current.serviceCall ?? ""],
+    enabled: !!clientName,
+    refetchInterval: 8000,
+    queryFn: async () => {
+      const { data: cr } = await supabase
+        .from("care_receivers")
+        .select("id")
+        .ilike("name", clientName)
+        .limit(1)
+        .maybeSingle();
+      if (!cr?.id) return [] as any[];
+      const { data: meds } = await supabase
+        .from("medications")
+        .select("id, medication, dosage, notes, time_of_day, scheduled_time, service_type, date, administered_by")
+        .eq("care_receiver_id", cr.id)
+        .order("date", { ascending: false })
+        .limit(50);
+      return (meds ?? []) as any[];
+    },
+  });
+
+  const medGroupLabel = (() => {
+    const t = (liveMeds[0]?.time_of_day || "").toLowerCase();
+    if (t.includes("morning")) return "Morning Medication";
+    if (t.includes("lunch")) return "Lunch Medication";
+    if (t.includes("evening") || t.includes("night")) return "Evening Medication";
+    const sc = (current.serviceCall || "").toLowerCase();
+    if (sc.includes("morning")) return "Morning Medication";
+    if (sc.includes("lunch")) return "Lunch Medication";
+    if (sc.includes("evening") || sc.includes("night")) return "Evening Medication";
+    return "Medication";
+  })();
+
+  const filteredMeds = liveMeds.filter((m: any) => {
+    const inFilter = medFilter === "all" || m.medication === medFilter;
+    const inSearch = !medSearch || (m.medication || "").toLowerCase().includes(medSearch.toLowerCase());
     return inFilter && inSearch;
   });
 
