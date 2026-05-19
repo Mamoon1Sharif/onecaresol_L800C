@@ -1089,10 +1089,14 @@ function StaffAvailabilitySection({
   caregivers,
   currentStaffName,
   shiftDate,
+  shiftRef,
+  onAssign,
 }: {
   caregivers: any[];
   currentStaffName: string;
   shiftDate: string;
+  shiftRef?: string;
+  onAssign?: (name: string) => void;
 }) {
   const list: StaffRow[] = (caregivers ?? []).slice(0, 12).map((cg, i) => ({
     id: cg.id,
