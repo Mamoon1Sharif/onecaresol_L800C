@@ -653,17 +653,20 @@ const AddRota = () => {
                   <TimePicker
                     h={form.startH}
                     m={form.startM}
-                    onH={(v) => setForm({ ...form, startH: v })}
-                    onM={(v) => setForm({ ...form, startM: v })}
+                    onH={(v) => updateStart({ startH: v })}
+                    onM={(v) => updateStart({ startM: v })}
                   />
                 </Field>
                 <Field label="End time" required>
                   <TimePicker
                     h={form.endH}
                     m={form.endM}
-                    onH={(v) => setForm({ ...form, endH: v })}
-                    onM={(v) => setForm({ ...form, endM: v })}
+                    onH={(v) => updateEnd({ endH: v })}
+                    onM={(v) => updateEnd({ endM: v })}
                   />
+                  {endsNextDay && (
+                    <p className="text-[11px] text-primary mt-1 font-medium">Ends next day</p>
+                  )}
                 </Field>
               </div>
 
