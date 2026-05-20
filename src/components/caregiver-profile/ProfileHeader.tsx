@@ -38,6 +38,18 @@ export function ProfileHeader({ cg }: Props) {
 
   const tags: string[] = Array.isArray((cg as any).tags) ? (cg as any).tags : [];
 
+  const { data: holidayEntries = [] } = useCaregiverHolidayEntries();
+  const todayStr = new Date().toISOString().split("T")[0];
+  const leaveReason = caregiverUnavailableReason(cg as any, holidayEntries, todayStr);
+  const onLeave = leaveReason?.kind === "holiday" || leaveReason?.kind === "training";
+  const displayLabel = onLeave
+    ? leaveReason!.kind === "training"
+      ? "On Training"
+      : leaveReason!.label === "On Absence"
+      ? "On Absence"
+      : "On Leave"
+    : cg.status;
+
   const handleStatusChange = async (status: string) => {
     try {
       await updateMutation.mutateAsync({ id: cg.id, status } as any);
