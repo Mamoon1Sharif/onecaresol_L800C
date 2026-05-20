@@ -737,7 +737,9 @@ export default function AdvancedRota() {
       return;
     }
     const length = s.end - s.start;
-    let start = toStart ?? s.start;
+    // Magnet snap: assigning an unassigned shift locks to its predefined time slot.
+    const isAssigningUnassigned = s.staff === UNASSIGNED && toStaff !== UNASSIGNED;
+    let start = isAssigningUnassigned ? s.start : (toStart ?? s.start);
     // snap to 15 min and clamp into 0..24
     start = Math.max(0, Math.min(24 - length, Math.round(start * 4) / 4));
     const end = start + length;
