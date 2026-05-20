@@ -3,11 +3,44 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Users, HeartHandshake, CalendarDays, AlertTriangle, Radio, CheckCircle2, Clock, ListChecks, Pill, Palmtree, UmbrellaOff, AlertOctagon, Eye, ChevronLeft, ChevronRight, XCircle, Timer, Search, Ban, UserX, Moon, ArrowRightFromLine, ChevronDown, StickyNote, ClipboardCheck } from "lucide-react";
-import { useDashboardStats, useDashboardVisits, useCompletedVisitsToday, useShiftNotes, useShiftTasks, useDailyVisits, useCaregiverPrivateNotes, useVisitNotesByShift } from "@/hooks/use-care-data";
+  Users,
+  HeartHandshake,
+  CalendarDays,
+  AlertTriangle,
+  Radio,
+  CheckCircle2,
+  Clock,
+  ListChecks,
+  Pill,
+  Palmtree,
+  UmbrellaOff,
+  AlertOctagon,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  XCircle,
+  Timer,
+  Search,
+  Ban,
+  UserX,
+  Moon,
+  ArrowRightFromLine,
+  ChevronDown,
+  StickyNote,
+  ClipboardCheck,
+} from "lucide-react";
+import {
+  useDashboardStats,
+  useDashboardVisits,
+  useCompletedVisitsToday,
+  useShiftNotes,
+  useShiftTasks,
+  useDailyVisits,
+  useCaregiverPrivateNotes,
+  useVisitNotesByShift,
+} from "@/hooks/use-care-data";
 import { supabase } from "@/integrations/supabase/client";
 import { ShiftDetailDialog } from "@/components/ShiftDetailDialog";
 import { Button } from "@/components/ui/button";
@@ -84,14 +117,14 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
   return (
     <>
       <TableRow className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={onClick}>
-        <TableCell className="font-medium text-foreground">
-          {(v.care_givers as any)?.name ?? "—"}
-        </TableCell>
+        <TableCell className="font-medium text-foreground">{(v.care_givers as any)?.name ?? "—"}</TableCell>
         <TableCell className="text-sm text-foreground">
           <div className="flex items-center gap-1.5">
             {(v.care_receivers as any)?.name ?? "—"}
             {(v.care_receivers as any)?.dnacpr && (
-              <Badge variant="destructive" className="text-[9px] px-1 py-0">DNACPR</Badge>
+              <Badge variant="destructive" className="text-[9px] px-1 py-0">
+                DNACPR
+              </Badge>
             )}
           </div>
         </TableCell>
@@ -101,7 +134,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
             {(() => {
               const startH = v.start_hour;
               const startM = v.start_minute || 0;
-              const durationMins = v.duration_minutes ?? (v.duration * 60);
+              const durationMins = v.duration_minutes ?? v.duration * 60;
               const totalStartMins = startH * 60 + startM;
               const totalEndMins = totalStartMins + durationMins;
               const endH = Math.floor(totalEndMins / 60) % 24;
@@ -147,26 +180,47 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
         <TableRow className="bg-muted/20">
           <TableCell colSpan={8} className="py-2 px-6">
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><StickyNote className="h-3 w-3" /> Notes</p>
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <StickyNote className="h-3 w-3" /> Notes
+              </p>
               {notes.length === 0 && privateNotes.length === 0 && visitNotes.length === 0 ? (
-                <div className="text-xs text-muted-foreground italic px-3 py-1.5">No notes recorded for this shift.</div>
+                <div className="text-xs text-muted-foreground italic px-3 py-1.5">
+                  No notes recorded for this shift.
+                </div>
               ) : (
                 <>
                   {notes.map((n: any) => (
-                    <div key={n.id} className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border">
+                    <div
+                      key={n.id}
+                      className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border"
+                    >
                       <span className="font-semibold text-primary text-xs">Shift Note:</span> {n.note}
-                      {n.author && <span className="text-[10px] text-muted-foreground ml-2">by {n.author === v.care_giver_id ? (v.care_givers as any)?.name : n.author}</span>}
+                      {n.author && (
+                        <span className="text-[10px] text-muted-foreground ml-2">
+                          by {n.author === v.care_giver_id ? (v.care_givers as any)?.name : n.author}
+                        </span>
+                      )}
                     </div>
                   ))}
                   {visitNotes.map((vn: any) => (
-                    <div key={vn.id} className="text-sm text-foreground bg-blue-50 dark:bg-blue-950/20 rounded px-3 py-1.5 border border-blue-200/50 dark:border-blue-800/30">
-                      <span className="font-semibold text-blue-700 dark:text-blue-400 text-xs">Visit Note:</span> {vn.note}
+                    <div
+                      key={vn.id}
+                      className="text-sm text-foreground bg-blue-50 dark:bg-blue-950/20 rounded px-3 py-1.5 border border-blue-200/50 dark:border-blue-800/30"
+                    >
+                      <span className="font-semibold text-blue-700 dark:text-blue-400 text-xs">Umar Note:</span>{" "}
+                      {vn.note}
                       <span className="text-[10px] text-muted-foreground ml-2">by {vn.caregiver}</span>
                     </div>
                   ))}
                   {privateNotes.map((pn: any) => (
-                    <div key={pn.id} className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/20 rounded px-3 py-1.5 border border-amber-200/50 dark:border-amber-800/30">
-                      <span className="font-semibold text-amber-700 dark:text-amber-400 text-xs">Caregiver Private Note:</span> {pn.note}
+                    <div
+                      key={pn.id}
+                      className="text-sm text-foreground bg-amber-50 dark:bg-amber-950/20 rounded px-3 py-1.5 border border-amber-200/50 dark:border-amber-800/30"
+                    >
+                      <span className="font-semibold text-amber-700 dark:text-amber-400 text-xs">
+                        Caregiver Private Note:
+                      </span>{" "}
+                      {pn.note}
                     </div>
                   ))}
                 </>
@@ -179,12 +233,19 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
         <TableRow className="bg-muted/20">
           <TableCell colSpan={8} className="py-2 px-6">
             <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1"><ClipboardCheck className="h-3 w-3" /> Tasks</p>
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <ClipboardCheck className="h-3 w-3" /> Tasks
+              </p>
               {tasks.length === 0 ? (
-                <div className="text-xs text-muted-foreground italic px-3 py-1.5">No tasks recorded for this shift.</div>
+                <div className="text-xs text-muted-foreground italic px-3 py-1.5">
+                  No tasks recorded for this shift.
+                </div>
               ) : (
                 tasks.map((t: any) => (
-                  <div key={t.id} className="flex items-center gap-2 text-sm bg-background rounded px-3 py-1.5 border border-border">
+                  <div
+                    key={t.id}
+                    className="flex items-center gap-2 text-sm bg-background rounded px-3 py-1.5 border border-border"
+                  >
                     {t.is_completed ? (
                       <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0" />
                     ) : (
@@ -256,9 +317,15 @@ const Dashboard = () => {
     const channel = supabase
       .channel("dashboard-visits-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "dashboard_visits" }, () => refetch())
-      .on("postgres_changes", { event: "*", schema: "public", table: "daily_visits" }, () => { refetchCompleted(); refetchToday(); refetchSelectedDate(); })
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_visits" }, () => {
+        refetchCompleted();
+        refetchToday();
+        refetchSelectedDate();
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [refetch, refetchCompleted, refetchToday, refetchSelectedDate]);
 
   // Live visits: scheduled start has begun, and shift is not yet completed (no clock-out) and within scheduled window or in progress
@@ -274,30 +341,145 @@ const Dashboard = () => {
   });
 
   const statCards = [
-    { title: "Total Care Givers", value: String(stats?.totalCareGivers ?? "—"), icon: Users, iconBg: "bg-primary/10", color: "text-primary", borderAccent: "" },
-    { title: "Active Service Members", value: String(stats?.activeCareReceivers ?? "—"), icon: HeartHandshake, iconBg: "bg-success/10", color: "text-success", borderAccent: "" },
-    { title: "Visits Today", value: String(stats?.visitsToday ?? "—"), icon: CalendarDays, iconBg: "bg-info/10", color: "text-info", borderAccent: "" },
-    { title: "Completed Shifts", value: String(completedVisits.length), icon: CheckCircle2, iconBg: "bg-success/10", color: "text-success", borderAccent: "border-l-4 border-l-success" },
+    {
+      title: "Total Care Givers",
+      value: String(stats?.totalCareGivers ?? "—"),
+      icon: Users,
+      iconBg: "bg-primary/10",
+      color: "text-primary",
+      borderAccent: "",
+    },
+    {
+      title: "Active Service Members",
+      value: String(stats?.activeCareReceivers ?? "—"),
+      icon: HeartHandshake,
+      iconBg: "bg-success/10",
+      color: "text-success",
+      borderAccent: "",
+    },
+    {
+      title: "Visits Today",
+      value: String(stats?.visitsToday ?? "—"),
+      icon: CalendarDays,
+      iconBg: "bg-info/10",
+      color: "text-info",
+      borderAccent: "",
+    },
+    {
+      title: "Completed Shifts",
+      value: String(completedVisits.length),
+      icon: CheckCircle2,
+      iconBg: "bg-success/10",
+      color: "text-success",
+      borderAccent: "border-l-4 border-l-success",
+    },
   ];
 
   const [carouselPage, setCarouselPage] = useState(0);
   const CARDS_PER_PAGE = 4;
   const infographicCards = [
-    { label: "COMPLETED CALLS", value: String(completedVisits.length || 0), sub: `${stats?.visitsToday ? ((completedVisits.length / stats.visitsToday) * 100).toFixed(1) : 0}% of ${stats?.visitsToday ?? 0} shifts`, icon: CheckCircle2, bg: "bg-green-500", iconBg: "bg-green-600" },
-    { label: "LATE CALLS", value: "2", sub: "1.57% 30 minutes late", icon: Timer, bg: "bg-amber-600", iconBg: "bg-amber-700" },
-    { label: "MISSED CALLS", value: "2", sub: "1.57% Not clocked into", icon: XCircle, bg: "bg-red-500", iconBg: "bg-red-600" },
-    { label: "CALLS WITH MISSED MEDS", value: "5", sub: "13 Missed Meds", icon: Pill, bg: "bg-sky-500", iconBg: "bg-sky-600" },
-    { label: "MEDS NOT ADMINISTERED", value: "2", sub: "3 Meds Not Administered", icon: Pill, bg: "bg-pink-600", iconBg: "bg-pink-700" },
-    { label: "OVERDUE TASKS", value: "5", sub: "5 Overdue Tasks", icon: ListChecks, bg: "bg-amber-500", iconBg: "bg-amber-600" },
-    { label: "SHORT VISITS", value: "3", sub: "2.36% clocked in less than 75%", icon: Search, bg: "bg-orange-400", iconBg: "bg-orange-500" },
-    { label: "CANCELLED CALLS", value: "6", sub: "4.72% Calls Cancelled", icon: Ban, bg: "bg-gray-600", iconBg: "bg-gray-700" },
-    { label: "SHADOW SHIFTS", value: "1", sub: "0.79% of 127 shifts", icon: UserX, bg: "bg-blue-600", iconBg: "bg-blue-700" },
-    { label: "EARLY CALLS", value: "0", sub: "0.00% of shifts", icon: Clock, bg: "bg-purple-600", iconBg: "bg-purple-700" },
-    { label: "CLOCK OUT EARLY", value: "1", sub: "0.79% of shifts", icon: Moon, bg: "bg-purple-500", iconBg: "bg-purple-600" },
-    { label: "AUTO CLOCKOUTS", value: "2", sub: "1.57% of shifts", icon: ArrowRightFromLine, bg: "bg-pink-500", iconBg: "bg-pink-600" },
+    {
+      label: "COMPLETED CALLS",
+      value: String(completedVisits.length || 0),
+      sub: `${stats?.visitsToday ? ((completedVisits.length / stats.visitsToday) * 100).toFixed(1) : 0}% of ${stats?.visitsToday ?? 0} shifts`,
+      icon: CheckCircle2,
+      bg: "bg-green-500",
+      iconBg: "bg-green-600",
+    },
+    {
+      label: "LATE CALLS",
+      value: "2",
+      sub: "1.57% 30 minutes late",
+      icon: Timer,
+      bg: "bg-amber-600",
+      iconBg: "bg-amber-700",
+    },
+    {
+      label: "MISSED CALLS",
+      value: "2",
+      sub: "1.57% Not clocked into",
+      icon: XCircle,
+      bg: "bg-red-500",
+      iconBg: "bg-red-600",
+    },
+    {
+      label: "CALLS WITH MISSED MEDS",
+      value: "5",
+      sub: "13 Missed Meds",
+      icon: Pill,
+      bg: "bg-sky-500",
+      iconBg: "bg-sky-600",
+    },
+    {
+      label: "MEDS NOT ADMINISTERED",
+      value: "2",
+      sub: "3 Meds Not Administered",
+      icon: Pill,
+      bg: "bg-pink-600",
+      iconBg: "bg-pink-700",
+    },
+    {
+      label: "OVERDUE TASKS",
+      value: "5",
+      sub: "5 Overdue Tasks",
+      icon: ListChecks,
+      bg: "bg-amber-500",
+      iconBg: "bg-amber-600",
+    },
+    {
+      label: "SHORT VISITS",
+      value: "3",
+      sub: "2.36% clocked in less than 75%",
+      icon: Search,
+      bg: "bg-orange-400",
+      iconBg: "bg-orange-500",
+    },
+    {
+      label: "CANCELLED CALLS",
+      value: "6",
+      sub: "4.72% Calls Cancelled",
+      icon: Ban,
+      bg: "bg-gray-600",
+      iconBg: "bg-gray-700",
+    },
+    {
+      label: "SHADOW SHIFTS",
+      value: "1",
+      sub: "0.79% of 127 shifts",
+      icon: UserX,
+      bg: "bg-blue-600",
+      iconBg: "bg-blue-700",
+    },
+    {
+      label: "EARLY CALLS",
+      value: "0",
+      sub: "0.00% of shifts",
+      icon: Clock,
+      bg: "bg-purple-600",
+      iconBg: "bg-purple-700",
+    },
+    {
+      label: "CLOCK OUT EARLY",
+      value: "1",
+      sub: "0.79% of shifts",
+      icon: Moon,
+      bg: "bg-purple-500",
+      iconBg: "bg-purple-600",
+    },
+    {
+      label: "AUTO CLOCKOUTS",
+      value: "2",
+      sub: "1.57% of shifts",
+      icon: ArrowRightFromLine,
+      bg: "bg-pink-500",
+      iconBg: "bg-pink-600",
+    },
   ];
   const totalPages = Math.ceil(infographicCards.length / CARDS_PER_PAGE);
-  const visibleCards = infographicCards.slice(carouselPage * CARDS_PER_PAGE, carouselPage * CARDS_PER_PAGE + CARDS_PER_PAGE);
+  const visibleCards = infographicCards.slice(
+    carouselPage * CARDS_PER_PAGE,
+    carouselPage * CARDS_PER_PAGE + CARDS_PER_PAGE,
+  );
 
   return (
     <AppLayout>
@@ -355,7 +537,10 @@ const Dashboard = () => {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {statCards.map((stat) => (
-            <Card key={stat.title} className={`border border-border shadow-md hover:shadow-lg transition-shadow bg-card ${stat.borderAccent}`}>
+            <Card
+              key={stat.title}
+              className={`border border-border shadow-md hover:shadow-lg transition-shadow bg-card ${stat.borderAccent}`}
+            >
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div>
@@ -379,22 +564,14 @@ const Dashboard = () => {
               <CardTitle className="text-base font-semibold">
                 Completed Shifts {isViewingToday ? "Today" : formatDateDisplay(selectedDateStr)}
               </CardTitle>
-              <Badge variant="secondary" className="ml-1 text-xs">{completedVisitsForDate.length}</Badge>
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {completedVisitsForDate.length}
+              </Badge>
               <div className="ml-auto flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handlePreviousDate}
-                  className="h-8 w-8 p-0"
-                >
+                <Button variant="ghost" size="sm" onClick={handlePreviousDate} className="h-8 w-8 p-0">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleNextDate}
-                  className="h-8 w-8 p-0"
-                >
+                <Button variant="ghost" size="sm" onClick={handleNextDate} className="h-8 w-8 p-0">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -420,9 +597,11 @@ const Dashboard = () => {
                       No completed shifts {isViewingToday ? "yet today" : `on ${formatDateDisplay(selectedDateStr)}`}
                     </TableCell>
                   </TableRow>
-                ) : completedVisitsForDate.map((v) => (
-                  <CompletedVisitRow key={v.id} v={v} onClick={() => setSelectedVisit(v)} />
-                ))}
+                ) : (
+                  completedVisitsForDate.map((v) => (
+                    <CompletedVisitRow key={v.id} v={v} onClick={() => setSelectedVisit(v)} />
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -445,35 +624,45 @@ const Dashboard = () => {
                   <TableHead className="font-semibold text-foreground">Assigned Member</TableHead>
                   <TableHead className="font-semibold text-foreground">Scheduled Time</TableHead>
                   <TableHead className="font-semibold text-foreground">Clock In</TableHead>
-
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {liveVisits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No live visits right now</TableCell>
+                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      No live visits right now
+                    </TableCell>
                   </TableRow>
-                ) : liveVisits.map((v: any) => {
-                  const startH = v.start_hour;
-                  const startM = v.start_minute || 0;
-                  const durationMins = v.duration_minutes ?? (v.duration * 60);
-                  const totalStartMins = startH * 60 + startM;
-                  const totalEndMins = totalStartMins + durationMins;
-                  const endH = Math.floor(totalEndMins / 60) % 24;
-                  const endM = totalEndMins % 60;
+                ) : (
+                  liveVisits.map((v: any) => {
+                    const startH = v.start_hour;
+                    const startM = v.start_minute || 0;
+                    const durationMins = v.duration_minutes ?? v.duration * 60;
+                    const totalStartMins = startH * 60 + startM;
+                    const totalEndMins = totalStartMins + durationMins;
+                    const endH = Math.floor(totalEndMins / 60) % 24;
+                    const endM = totalEndMins % 60;
 
-                  const schedLabel = `${String(startH).padStart(2, "0")}:${String(startM).padStart(2, "0")} – ${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
-                  const status = getVisitStatus(v);
-                  return (
-                    <TableRow key={v.id} className="hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setSelectedVisit(v)}>
-                      <TableCell className="font-medium text-foreground">{(v.care_givers as any)?.name ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-foreground">{(v.care_receivers as any)?.name ?? "—"}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{schedLabel}</TableCell>
-                      <TableCell className="text-sm font-mono">{fmtTime(v.check_in_time)}</TableCell>
-
-                    </TableRow>
-                  );
-                })}
+                    const schedLabel = `${String(startH).padStart(2, "0")}:${String(startM).padStart(2, "0")} – ${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+                    const status = getVisitStatus(v);
+                    return (
+                      <TableRow
+                        key={v.id}
+                        className="hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => setSelectedVisit(v)}
+                      >
+                        <TableCell className="font-medium text-foreground">
+                          {(v.care_givers as any)?.name ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-foreground">
+                          {(v.care_receivers as any)?.name ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{schedLabel}</TableCell>
+                        <TableCell className="text-sm font-mono">{fmtTime(v.check_in_time)}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -507,7 +696,9 @@ const Dashboard = () => {
 
       <ShiftDetailDialog
         open={!!selectedVisit}
-        onOpenChange={(o) => { if (!o) setSelectedVisit(null); }}
+        onOpenChange={(o) => {
+          if (!o) setSelectedVisit(null);
+        }}
         visit={selectedVisit}
       />
     </AppLayout>

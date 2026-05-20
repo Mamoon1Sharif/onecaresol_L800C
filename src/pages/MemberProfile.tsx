@@ -10,16 +10,41 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import {
-  ArrowLeft, MapPin, Phone, User, FileText, Pill, ClipboardList, Plus, Edit2, Trash2,
-  AlertTriangle, Target, Shield,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  ArrowLeft,
+  MapPin,
+  Phone,
+  User,
+  FileText,
+  Pill,
+  ClipboardList,
+  Plus,
+  Edit2,
+  Trash2,
+  AlertTriangle,
+  Target,
+  Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
-  useCareReceiver, useUpdateCareReceiver, useMedications, useVisitNotes,
-  useRiskAssessments, useUpsertRiskAssessment, useDeleteRiskAssessment,
-  useHealthGoals, useUpsertHealthGoal, useDeleteHealthGoal,
+  useCareReceiver,
+  useUpdateCareReceiver,
+  useMedications,
+  useVisitNotes,
+  useRiskAssessments,
+  useUpsertRiskAssessment,
+  useDeleteRiskAssessment,
+  useHealthGoals,
+  useUpsertHealthGoal,
+  useDeleteHealthGoal,
 } from "@/hooks/use-care-data";
 
 const statusStyles: Record<string, string> = {
@@ -73,10 +98,15 @@ const MemberProfile = () => {
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [goalForm, setGoalForm] = useState({ goal: "", target: "", status: "Not Started", notes: "" });
 
-  const openRiskDialog = (r?: typeof risks[0]) => {
+  const openRiskDialog = (r?: (typeof risks)[0]) => {
     if (r) {
       setEditingRiskId(r.id);
-      setRiskForm({ category: r.category, description: r.description, level: r.level, mitigations: r.mitigations ?? "" });
+      setRiskForm({
+        category: r.category,
+        description: r.description,
+        level: r.level,
+        mitigations: r.mitigations ?? "",
+      });
     } else {
       setEditingRiskId(null);
       setRiskForm({ category: "", description: "", level: "Low", mitigations: "" });
@@ -99,7 +129,7 @@ const MemberProfile = () => {
     toast({ title: editingRiskId ? "Risk Updated" : "Risk Added" });
   };
 
-  const openGoalDialog = (g?: typeof goals[0]) => {
+  const openGoalDialog = (g?: (typeof goals)[0]) => {
     if (g) {
       setEditingGoalId(g.id);
       setGoalForm({ goal: g.goal, target: g.target ?? "", status: g.status, notes: g.notes ?? "" });
@@ -122,7 +152,13 @@ const MemberProfile = () => {
   };
 
   if (isLoading) {
-    return <AppLayout><div className="flex items-center justify-center py-20"><p className="text-muted-foreground">Loading...</p></div></AppLayout>;
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center py-20">
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </AppLayout>
+    );
   }
 
   if (!member) {
@@ -130,7 +166,9 @@ const MemberProfile = () => {
       <AppLayout>
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <p className="text-lg font-medium text-foreground">Member not found</p>
-          <Button variant="outline" className="mt-4" onClick={() => navigate("/carereceivers")}><ArrowLeft className="h-4 w-4 mr-2" /> Back to Service Members</Button>
+          <Button variant="outline" className="mt-4" onClick={() => navigate("/carereceivers")}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Service Members
+          </Button>
         </div>
       </AppLayout>
     );
@@ -140,7 +178,12 @@ const MemberProfile = () => {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <Button variant="ghost" size="sm" className="gap-1.5 mb-4 -ml-2 text-muted-foreground hover:text-foreground" onClick={() => navigate("/carereceivers")}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+            onClick={() => navigate("/carereceivers")}
+          >
             <ArrowLeft className="h-4 w-4" /> Back to Service Members
           </Button>
 
@@ -149,7 +192,12 @@ const MemberProfile = () => {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-lg font-bold text-primary">{member.name.split(" ").map((n) => n[0]).join("")}</span>
+                    <span className="text-lg font-bold text-primary">
+                      {member.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")}
+                    </span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -161,9 +209,27 @@ const MemberProfile = () => {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5 pt-5 border-t border-border">
-                <div className="flex items-start gap-2"><MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><p className="text-xs text-muted-foreground">Address</p><p className="text-sm text-foreground">{member.address}</p></div></div>
-                <div className="flex items-start gap-2"><User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><p className="text-xs text-muted-foreground">Next of Kin</p><p className="text-sm text-foreground">{member.next_of_kin}</p></div></div>
-                <div className="flex items-start gap-2"><Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" /><div><p className="text-xs text-muted-foreground">Emergency Contact</p><p className="text-sm text-foreground">{member.next_of_kin_phone}</p></div></div>
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Address</p>
+                    <p className="text-sm text-foreground">{member.address}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <User className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Next of Kin</p>
+                    <p className="text-sm text-foreground">{member.next_of_kin}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Emergency Contact</p>
+                    <p className="text-sm text-foreground">{member.next_of_kin_phone}</p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -171,29 +237,47 @@ const MemberProfile = () => {
 
         <Tabs defaultValue="care-plan">
           <TabsList className="bg-muted/60">
-            <TabsTrigger value="care-plan" className="gap-1.5 text-xs sm:text-sm"><FileText className="h-3.5 w-3.5" /> Care Plan</TabsTrigger>
-            <TabsTrigger value="medication" className="gap-1.5 text-xs sm:text-sm"><Pill className="h-3.5 w-3.5" /> Medication History</TabsTrigger>
-            <TabsTrigger value="visit-notes" className="gap-1.5 text-xs sm:text-sm"><ClipboardList className="h-3.5 w-3.5" /> Visit Notes</TabsTrigger>
+            <TabsTrigger value="care-plan" className="gap-1.5 text-xs sm:text-sm">
+              <FileText className="h-3.5 w-3.5" /> Care Plan
+            </TabsTrigger>
+            <TabsTrigger value="medication" className="gap-1.5 text-xs sm:text-sm">
+              <Pill className="h-3.5 w-3.5" /> Medication History
+            </TabsTrigger>
+            <TabsTrigger value="visit-notes" className="gap-1.5 text-xs sm:text-sm">
+              <ClipboardList className="h-3.5 w-3.5" /> Visit Notes
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="care-plan">
             <div className="space-y-6">
               <Card className="border border-border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" /> Care Plan</CardTitle>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={async () => {
-                    if (isEditingPlan) {
-                      await updateCR.mutateAsync({ id: member.id, care_plan: carePlanText });
-                      toast({ title: "Care Plan Saved" });
-                    }
-                    setIsEditingPlan(!isEditingPlan);
-                  }}>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="h-4 w-4" /> Care Plan
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={async () => {
+                      if (isEditingPlan) {
+                        await updateCR.mutateAsync({ id: member.id, care_plan: carePlanText });
+                        toast({ title: "Care Plan Saved" });
+                      }
+                      setIsEditingPlan(!isEditingPlan);
+                    }}
+                  >
                     <Edit2 className="h-3.5 w-3.5" /> {isEditingPlan ? "Save" : "Edit"}
                   </Button>
                 </CardHeader>
                 <CardContent>
                   {isEditingPlan ? (
-                    <Textarea value={carePlanText} onChange={(e) => setCarePlanText(e.target.value)} rows={6} className="text-sm" />
+                    <Textarea
+                      value={carePlanText}
+                      onChange={(e) => setCarePlanText(e.target.value)}
+                      rows={6}
+                      className="text-sm"
+                    />
                   ) : (
                     <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{carePlanText}</p>
                   )}
@@ -202,8 +286,12 @@ const MemberProfile = () => {
 
               <Card className="border border-border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><Shield className="h-4 w-4 text-destructive" /> Risk Assessments</CardTitle>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openRiskDialog()}><Plus className="h-3.5 w-3.5" /> Add Risk</Button>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-destructive" /> Risk Assessments
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openRiskDialog()}>
+                    <Plus className="h-3.5 w-3.5" /> Add Risk
+                  </Button>
                 </CardHeader>
                 <CardContent className="p-0">
                   <Table>
@@ -220,15 +308,31 @@ const MemberProfile = () => {
                     <TableBody>
                       {risks.map((r) => (
                         <TableRow key={r.id} className="hover:bg-muted/30">
-                          <TableCell className="text-sm font-medium flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" /> {r.category}</TableCell>
+                          <TableCell className="text-sm font-medium flex items-center gap-1.5">
+                            <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" /> {r.category}
+                          </TableCell>
                           <TableCell className="text-sm max-w-[200px]">{r.description}</TableCell>
-                          <TableCell><Badge className={`${riskLevelStyles[r.level] ?? ""} border-0`}>{r.level}</Badge></TableCell>
+                          <TableCell>
+                            <Badge className={`${riskLevelStyles[r.level] ?? ""} border-0`}>{r.level}</Badge>
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground max-w-[200px]">{r.mitigations}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">{r.last_reviewed}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openRiskDialog(r)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={async () => { await deleteRisk.mutateAsync(r.id); toast({ title: "Risk Removed" }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openRiskDialog(r)}>
+                                <Edit2 className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                                onClick={async () => {
+                                  await deleteRisk.mutateAsync(r.id);
+                                  toast({ title: "Risk Removed" });
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -240,13 +344,20 @@ const MemberProfile = () => {
 
               <Card className="border border-border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between pb-3">
-                  <CardTitle className="text-base flex items-center gap-2"><Target className="h-4 w-4 text-primary" /> Health Goals</CardTitle>
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openGoalDialog()}><Plus className="h-3.5 w-3.5" /> Add Goal</Button>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" /> Health Goals
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => openGoalDialog()}>
+                    <Plus className="h-3.5 w-3.5" /> Add Goal
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {goals.map((g) => (
-                      <div key={g.id} className="flex items-start justify-between p-3 rounded-lg border border-border bg-muted/20">
+                      <div
+                        key={g.id}
+                        className="flex items-start justify-between p-3 rounded-lg border border-border bg-muted/20"
+                      >
                         <div className="space-y-1 flex-1">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-medium text-foreground">{g.goal}</p>
@@ -256,8 +367,20 @@ const MemberProfile = () => {
                           {g.notes && <p className="text-xs text-muted-foreground italic">{g.notes}</p>}
                         </div>
                         <div className="flex gap-1 ml-2">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openGoalDialog(g)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={async () => { await deleteGoal.mutateAsync(g.id); toast({ title: "Goal Removed" }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openGoalDialog(g)}>
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={async () => {
+                              await deleteGoal.mutateAsync(g.id);
+                              toast({ title: "Goal Removed" });
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -269,7 +392,9 @@ const MemberProfile = () => {
 
           <TabsContent value="medication">
             <Card className="border border-border shadow-sm overflow-hidden">
-              <CardHeader><CardTitle className="text-base">Medication History — Last 30 Days</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">Medication History — Last 30 Days</CardTitle>
+              </CardHeader>
               <CardContent className="p-0">
                 {medications.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-10">No medication records.</p>
@@ -303,7 +428,9 @@ const MemberProfile = () => {
 
           <TabsContent value="visit-notes">
             <Card className="border border-border shadow-sm">
-              <CardHeader><CardTitle className="text-base">Visit Notes</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-base">Visit Notes</CardTitle>
+              </CardHeader>
               <CardContent>
                 {visitNotes.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-10">No visit notes yet.</p>
@@ -334,22 +461,47 @@ const MemberProfile = () => {
             <DialogDescription>Document risks and mitigation strategies.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="space-y-2"><Label>Category</Label><Input value={riskForm.category} onChange={(e) => setRiskForm((f) => ({ ...f, category: e.target.value }))} placeholder="e.g. Falls" /></div>
-            <div className="space-y-2"><Label>Description</Label><Textarea value={riskForm.description} onChange={(e) => setRiskForm((f) => ({ ...f, description: e.target.value }))} /></div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Input
+                value={riskForm.category}
+                onChange={(e) => setRiskForm((f) => ({ ...f, category: e.target.value }))}
+                placeholder="e.g. Falls"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={riskForm.description}
+                onChange={(e) => setRiskForm((f) => ({ ...f, description: e.target.value }))}
+              />
+            </div>
             <div className="space-y-2">
               <Label>Risk Level</Label>
               <Select value={riskForm.level} onValueChange={(v) => setRiskForm((f) => ({ ...f, level: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Low">Low</SelectItem><SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="High">High</SelectItem><SelectItem value="Critical">Critical</SelectItem>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2"><Label>Mitigations</Label><Textarea value={riskForm.mitigations} onChange={(e) => setRiskForm((f) => ({ ...f, mitigations: e.target.value }))} /></div>
+            <div className="space-y-2">
+              <Label>Mitigations</Label>
+              <Textarea
+                value={riskForm.mitigations}
+                onChange={(e) => setRiskForm((f) => ({ ...f, mitigations: e.target.value }))}
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRiskDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setRiskDialog(false)}>
+              Cancel
+            </Button>
             <Button onClick={saveRisk}>Save</Button>
           </DialogFooter>
         </DialogContent>
@@ -363,22 +515,47 @@ const MemberProfile = () => {
             <DialogDescription>Set measurable health targets.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="space-y-2"><Label>Goal</Label><Input value={goalForm.goal} onChange={(e) => setGoalForm((f) => ({ ...f, goal: e.target.value }))} placeholder="e.g. Improve mobility" /></div>
-            <div className="space-y-2"><Label>Target</Label><Input value={goalForm.target} onChange={(e) => setGoalForm((f) => ({ ...f, target: e.target.value }))} placeholder="e.g. Walk 100m unaided" /></div>
+            <div className="space-y-2">
+              <Label>Goal</Label>
+              <Input
+                value={goalForm.goal}
+                onChange={(e) => setGoalForm((f) => ({ ...f, goal: e.target.value }))}
+                placeholder="e.g. Improve mobility"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Target</Label>
+              <Input
+                value={goalForm.target}
+                onChange={(e) => setGoalForm((f) => ({ ...f, target: e.target.value }))}
+                placeholder="e.g. Walk 100m unaided"
+              />
+            </div>
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={goalForm.status} onValueChange={(v) => setGoalForm((f) => ({ ...f, status: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Not Started">Not Started</SelectItem><SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Not Started">Not Started</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
                   <SelectItem value="Achieved">Achieved</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2"><Label>Notes</Label><Textarea value={goalForm.notes} onChange={(e) => setGoalForm((f) => ({ ...f, notes: e.target.value }))} /></div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={goalForm.notes}
+                onChange={(e) => setGoalForm((f) => ({ ...f, notes: e.target.value }))}
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGoalDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setGoalDialog(false)}>
+              Cancel
+            </Button>
             <Button onClick={saveGoal}>Save</Button>
           </DialogFooter>
         </DialogContent>
