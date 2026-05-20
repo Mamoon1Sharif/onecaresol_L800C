@@ -70,6 +70,13 @@ export function LiveRotaShiftDialog({
   const [showNotePrompt, setShowNotePrompt] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [newNoteVisible, setNewNoteVisible] = useState("Yes");
+  const [pendingCriticalAction, setPendingCriticalAction] = useState<null | {
+    title: string;
+    description: string;
+    actionLabel: string;
+    destructive?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>(null);
   const [shiftBulk, setShiftBulk] = useState("bulk");
   const [shiftSearch, setShiftSearch] = useState("");
   const [shiftRowChecked, setShiftRowChecked] = useState(false);
@@ -83,6 +90,31 @@ export function LiveRotaShiftDialog({
     setRemoved(false);
   }
   if (!shift || !current) return null;
+
+  const { data: liveVisitState } = useQuery({
+    queryKey: ["live-rota-visit-state", current.visitId],
+    enabled: !!current.visitId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_visits")
+        .select("status, check_in_time, check_out_time")
+        .eq("id", current.visitId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const liveStatus = (liveVisitState?.status || "").toLowerCase();
+  const isImmutable = Boolean(
+    liveVisitState?.check_in_time || liveVisitState?.check_out_time || ["in progress", "completed", "complete", "finished"].includes(liveStatus),
+  );
+  const immutableReason = "This shift is already in progress or completed, so it can't be changed.";
+  const guardImmutable = () => {
+    if (!isImmutable) return false;
+    toast.error(immutableReason);
+    return true;
+  };
 
   const matchesShiftSearch = (val: string) =>
     !shiftSearch || val.toLowerCase().includes(shiftSearch.toLowerCase());
@@ -132,6 +164,7 @@ export function LiveRotaShiftDialog({
   });
 
   const runShiftBulk = () => {
+    if (guardImmutable()) return;
     if (shiftBulk === "bulk") {
       toast.info("Select a bulk action first");
       return;
@@ -146,6 +179,7 @@ export function LiveRotaShiftDialog({
   };
 
   const runMedAction = () => {
+    if (guardImmutable()) return;
     const selected = Object.entries(medChecked).filter(([, v]) => v).map(([k]) => k);
     if (medFilter === "all" && selected.length === 0) {
       toast.error("Select medications or pick an action");
@@ -169,6 +203,12 @@ export function LiveRotaShiftDialog({
           </DialogHeader>
 
           <div className="p-4 space-y-4">
+            {isImmutable && (
+              <div className="rounded-sm border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-medium text-amber-900">
+                This shift is already in progress or completed, so critical changes are locked.
+              </div>
+            )}
+
             {/* Live Rota Shift(s) section */}
             <section className="border border-border rounded-sm overflow-hidden">
               <div className="border-t-2 border-t-primary/70 flex items-center justify-between px-3 py-2 bg-card">
@@ -176,7 +216,11 @@ export function LiveRotaShiftDialog({
                 <Button
                   size="sm"
                   className="h-7 gap-1 bg-warning hover:bg-warning/90 text-warning-foreground"
-                  onClick={() => setAmendOpen(true)}
+                  disabled={isImmutable}
+                  onClick={() => {
+                    if (guardImmutable()) return;
+                    setAmendOpen(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Edit Shift Details
                 </Button>
@@ -272,6 +316,7 @@ export function LiveRotaShiftDialog({
                         <button
                           type="button"
                           onClick={() => {
+                            if (guardImmutable()) return;
                             const el = document.getElementById("staff-availability-section");
                             if (el) {
                               el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -279,7 +324,8 @@ export function LiveRotaShiftDialog({
                               setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1600);
                             }
                           }}
-                          className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors"
+                          className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors disabled:pointer-events-none disabled:opacity-50"
+                          disabled={isImmutable}
                         >
                           <span className="text-base font-medium">Add Care Giver/s</span>
                           <span className="text-xs mt-1">Assign a Care Giver to this shift</span>
@@ -300,8 +346,12 @@ export function LiveRotaShiftDialog({
                           </div>
                           <Button
                             size="sm"
+                            disabled={isImmutable}
                             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground h-8 w-[140px]"
-                            onClick={() => setConfirmRemove(true)}
+                            onClick={() => {
+                              if (guardImmutable()) return;
+                              setConfirmRemove(true);
+                            }}
                           >
                             ↑ Remove Care Giver
                           </Button>
@@ -309,10 +359,24 @@ export function LiveRotaShiftDialog({
                         <div className="flex-1">
                           <div className="text-primary font-medium mb-2">{current.staff}</div>
                           <div className="space-y-1 text-sm">
-                            <button onClick={() => setClockEdit("in")} className="text-success hover:underline block">
+                            <button
+                              onClick={() => {
+                                if (guardImmutable()) return;
+                                setClockEdit("in");
+                              }}
+                              className="text-success hover:underline block disabled:pointer-events-none disabled:opacity-50"
+                              disabled={isImmutable}
+                            >
                               - Clock In
                             </button>
-                            <button onClick={() => setClockEdit("out")} className="text-success hover:underline block">
+                            <button
+                              onClick={() => {
+                                if (guardImmutable()) return;
+                                setClockEdit("out");
+                              }}
+                              className="text-success hover:underline block disabled:pointer-events-none disabled:opacity-50"
+                              disabled={isImmutable}
+                            >
                               - Clock Out
                             </button>
                           </div>
@@ -335,8 +399,13 @@ export function LiveRotaShiftDialog({
                 </h3>
                 <Button
                   size="sm"
+                  disabled={isImmutable}
                   className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground"
-                  onClick={() => { setLockReason(""); setShowLockPrompt(true); }}
+                  onClick={() => {
+                    if (guardImmutable()) return;
+                    setLockReason("");
+                    setShowLockPrompt(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Add Lock
                 </Button>
@@ -364,8 +433,17 @@ export function LiveRotaShiftDialog({
                             <button
                               className="text-destructive hover:underline text-xs"
                               onClick={() => {
-                                setLocks((p) => p.filter((x) => x.id !== l.id));
-                                toast.success("Lock removed");
+                                if (guardImmutable()) return;
+                                setPendingCriticalAction({
+                                  title: "Remove rota lock?",
+                                  description: `This will remove the lock \"${l.reason}\" from shift ${current.ref}.`,
+                                  actionLabel: "Remove lock",
+                                  destructive: true,
+                                  onConfirm: () => {
+                                    setLocks((p) => p.filter((x) => x.id !== l.id));
+                                    toast.success("Lock removed");
+                                  },
+                                });
                               }}
                             >Remove</button>
                           </td>
@@ -383,8 +461,14 @@ export function LiveRotaShiftDialog({
                 <h3 className="text-sm font-semibold text-foreground">Live Rota Notes</h3>
                 <Button
                   size="sm"
+                  disabled={isImmutable}
                   className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground"
-                  onClick={() => { setNewNote(""); setNewNoteVisible("Yes"); setShowNotePrompt(true); }}
+                  onClick={() => {
+                    if (guardImmutable()) return;
+                    setNewNote("");
+                    setNewNoteVisible("Yes");
+                    setShowNotePrompt(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Add New
                 </Button>
@@ -415,8 +499,17 @@ export function LiveRotaShiftDialog({
                             <button
                               className="text-destructive hover:underline text-xs"
                               onClick={() => {
-                                setNotes((p) => p.filter((x) => x.ref !== n.ref));
-                                toast.success("Note removed");
+                                if (guardImmutable()) return;
+                                setPendingCriticalAction({
+                                  title: "Delete note?",
+                                  description: `This will permanently delete note ${n.ref} from shift ${current.ref}.`,
+                                  actionLabel: "Delete note",
+                                  destructive: true,
+                                  onConfirm: () => {
+                                    setNotes((p) => p.filter((x) => x.ref !== n.ref));
+                                    toast.success("Note removed");
+                                  },
+                                });
                               }}
                             >Delete</button>
                           </td>
@@ -434,7 +527,9 @@ export function LiveRotaShiftDialog({
               currentStaffName={current.staff}
               shiftDate={current.date}
               shiftRef={current.ref}
+              disabled={isImmutable}
               onAssign={(name) => {
+                if (guardImmutable()) return;
                 setCurrent({ ...current, staff: name });
                 setRemoved(false);
                 saveAssignedShift({
@@ -603,6 +698,32 @@ export function LiveRotaShiftDialog({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!pendingCriticalAction}
+        onOpenChange={(open) => {
+          if (!open) setPendingCriticalAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={pendingCriticalAction?.destructive ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : undefined}
+              onClick={async () => {
+                await pendingCriticalAction?.onConfirm();
+                setPendingCriticalAction(null);
+              }}
+            >
+              {pendingCriticalAction?.actionLabel ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ClockEditDialog
         mode={clockEdit}
@@ -1142,12 +1263,14 @@ function StaffAvailabilitySection({
   currentStaffName,
   shiftDate,
   shiftRef,
+  disabled = false,
   onAssign,
 }: {
   caregivers: any[];
   currentStaffName: string;
   shiftDate: string;
   shiftRef?: string;
+  disabled?: boolean;
   onAssign?: (name: string) => void;
 }) {
   const list: StaffRow[] = (caregivers ?? []).slice(0, 12).map((cg, i) => ({
@@ -1249,9 +1372,12 @@ function StaffAvailabilitySection({
               return (
                 <Button
                   size="sm"
-                  disabled={!selected}
+                  disabled={disabled || !selected}
                   className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
-                  onClick={() => selected && setConfirmAssign(true)}
+                  onClick={() => {
+                    if (disabled) return;
+                    if (selected) setConfirmAssign(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Assign this Shift
                 </Button>

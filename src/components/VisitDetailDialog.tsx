@@ -19,6 +19,16 @@ import {
   LogIn, LogOut, PlayCircle, CircleDot, Pill, MessageSquare, StickyNote
 } from "lucide-react";
 import { useShiftNotes, useCaregiverPrivateNotes, useVisitNotesByShift, useCareGivers } from "@/hooks/use-care-data";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface VisitRow {
   id: string;
@@ -84,6 +94,14 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   const [lockOpen, setLockOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmRemoveCaregiverOpen, setConfirmRemoveCaregiverOpen] = useState(false);
+  const [pendingCriticalAction, setPendingCriticalAction] = useState<null | {
+    title: string;
+    description: string;
+    actionLabel: string;
+    destructive?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>(null);
 
   // Editable shift fields (local)
   const [editStatus, setEditStatus] = useState<string>(visit?.status ?? "");
@@ -181,6 +199,17 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
 
   if (!visit) return null;
 
+  const effectiveStatus = (editStatus || visit.status || "").toLowerCase();
+  const isImmutable = Boolean(
+    visit.rawVisit?.check_in_time || visit.rawVisit?.check_out_time || ["in progress", "completed", "complete", "finished"].includes(effectiveStatus),
+  );
+  const immutableReason = "This rota is already in progress or completed, so it can't be changed.";
+  const guardImmutable = () => {
+    if (!isImmutable) return false;
+    toast.error(immutableReason);
+    return true;
+  };
+
   const built = `${visit.ref} at ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} on ${visit.date}`;
 
   const syncVisitCache = (updates: Record<string, any>) => {
@@ -203,6 +232,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleSaveEdit = async () => {
+    if (guardImmutable()) return;
     if (!visit) return;
     const start = parseTime(editStart || visit.scheduledStart);
     const end = parseTime(editEnd || visit.scheduledEnd);
@@ -247,6 +277,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleAddNote = () => {
+    if (guardImmutable()) return;
     if (!noteText.trim()) return;
     setNotes((n) => [
       ...n,
@@ -258,6 +289,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleAddLock = () => {
+    if (guardImmutable()) return;
     if (!lockReason.trim()) return;
     setLocks((l) => [
       ...l,
@@ -268,6 +300,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleClockIn = () => {
+    if (guardImmutable()) return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -300,6 +333,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleClockOut = async () => {
+    if (guardImmutable()) return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     const checkOutIso = now.toISOString();
@@ -345,12 +379,25 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
 
           <ScrollArea className="h-[calc(92vh-56px)]">
             <div className="p-4 space-y-6">
+              {isImmutable && (
+                <div className="rounded-sm border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-medium text-amber-900">
+                  This rota is already in progress or completed, so critical changes are locked.
+                </div>
+              )}
 
               {/* ============== LIVE ROTA SHIFTS ============== */}
               <section>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-semibold text-primary">Live Rota Shift(s)</h3>
-                  <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs gap-1.5" onClick={() => setEditOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={isImmutable}
+                    className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs gap-1.5"
+                    onClick={() => {
+                      if (guardImmutable()) return;
+                      setEditOpen(true);
+                    }}
+                  >
                     <Pencil className="h-3.5 w-3.5" /> Edit Shift Details
                   </Button>
                 </div>
@@ -560,8 +607,12 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                       />
                       <Button
                         size="sm"
+                        disabled={isImmutable}
                         className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs w-full gap-1.5"
-                        onClick={() => setMemberRemoved(true)}
+                        onClick={() => {
+                          if (guardImmutable()) return;
+                          setConfirmRemoveCaregiverOpen(true);
+                        }}
                       >
                         ↑ Remove Care Giver
                       </Button>
@@ -587,7 +638,15 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
               <section>
                 <div className="flex items-center justify-between border-b pb-1 mb-2">
                   <h3 className="text-sm font-semibold flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Rota Locks</h3>
-                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setLockOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={isImmutable}
+                    className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1"
+                    onClick={() => {
+                      if (guardImmutable()) return;
+                      setLockOpen(true);
+                    }}
+                  >
                     <Plus className="h-3.5 w-3.5" /> Add Lock
                   </Button>
                 </div>
@@ -601,7 +660,22 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                           <div className="font-medium">{l.reason}</div>
                           <div className="text-[10px] text-muted-foreground">By {l.by} · {l.createdAt}</div>
                         </div>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setLocks((arr) => arr.filter((x) => x.id !== l.id))}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          disabled={isImmutable}
+                          onClick={() => {
+                            if (guardImmutable()) return;
+                            setPendingCriticalAction({
+                              title: "Remove rota lock?",
+                              description: `This will remove the lock \"${l.reason}\" from rota ${visit.ref}.`,
+                              actionLabel: "Remove lock",
+                              destructive: true,
+                              onConfirm: () => setLocks((arr) => arr.filter((x) => x.id !== l.id)),
+                            });
+                          }}
+                        >
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
@@ -681,7 +755,15 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
               <section>
                 <div className="flex items-center justify-between border-b pb-1 mb-2">
                   <h3 className="text-sm font-semibold text-primary">Shadow Shifts</h3>
-                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setShadowOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={isImmutable}
+                    className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1"
+                    onClick={() => {
+                      if (guardImmutable()) return;
+                      setShadowOpen(true);
+                    }}
+                  >
                     <Plus className="h-3.5 w-3.5" /> Add New
                   </Button>
                 </div>
@@ -795,6 +877,56 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={confirmRemoveCaregiverOpen} onOpenChange={setConfirmRemoveCaregiverOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove care giver?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <span className="font-medium text-foreground">{visit.teamMember}</span> from rota {visit.ref}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => {
+                setMemberRemoved(true);
+                setConfirmRemoveCaregiverOpen(false);
+                toast.success("Care giver removed");
+              }}
+            >
+              Remove care giver
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!pendingCriticalAction}
+        onOpenChange={(open) => {
+          if (!open) setPendingCriticalAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={pendingCriticalAction?.destructive ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : undefined}
+              onClick={async () => {
+                await pendingCriticalAction?.onConfirm();
+                setPendingCriticalAction(null);
+              }}
+            >
+              {pendingCriticalAction?.actionLabel ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* ============== ADD SHADOW SHIFT DIALOG ============== */}
       <Dialog open={shadowOpen} onOpenChange={setShadowOpen}>
