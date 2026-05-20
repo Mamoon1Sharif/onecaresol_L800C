@@ -541,14 +541,6 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                   </div>
                 )}
 
-                {active === "edit-staff" && (
-                  <PlaceholderPanel
-                    title="Edit Staff with Visual"
-                    description="Visual staff allocation with availability heatmap. Pick a care giver by viewing their schedule and skills side-by-side."
-                    cta="Open Visual Allocator"
-                  />
-                )}
-
                 {active === "service-user" && (
                   <PlaceholderPanel
                     title="Service Member Profile"
@@ -578,18 +570,6 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     }}
                   />
                 )}
-
-                {active === "notes" && (
-                  <NotesPanel
-                    onSave={() => {
-                      toast.success("Note saved");
-                    }}
-                  />
-                )}
-
-                {active === "tasks" && <TasksPanel />}
-
-                {active === "medication" && <MedicationPanel shift={shift} />}
 
                 {active === "shadows" && (
                   <PlaceholderPanel
