@@ -224,7 +224,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
               This shift has already started or completed — view only. It can't be edited or moved.
             </div>
           )}
-          <fieldset disabled={readOnly} className={cn("contents", readOnly && "[&_*]:!cursor-not-allowed [&_input]:pointer-events-none [&_textarea]:pointer-events-none [&_[role=combobox]]:pointer-events-none [&_button[type=button]]:pointer-events-none")}>
+          <fieldset disabled={readOnly} className="contents">
           {/* Summary table */}
           <div className="border-b border-border">
 
