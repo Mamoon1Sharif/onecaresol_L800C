@@ -82,25 +82,17 @@ interface Props {
 
 type Tab =
   | "edit"
-  | "edit-staff"
   | "service-user"
   | "manual-in"
   | "manual-out"
-  | "notes"
-  | "tasks"
-  | "medication"
   | "shadows"
   | "locks";
 
 const TABS: { id: Tab; label: string; icon: typeof Pencil }[] = [
   { id: "edit", label: "Edit", icon: Pencil },
-  { id: "edit-staff", label: "Edit Staff with Visual", icon: Eye },
   { id: "service-user", label: "Go to Service Members Profile", icon: UserCog },
   { id: "manual-in", label: "Manual Clock In", icon: LogIn },
   { id: "manual-out", label: "Manual Clock Out", icon: LogOut },
-  { id: "notes", label: "Notes", icon: StickyNote },
-  { id: "tasks", label: "Tasks", icon: CheckSquare },
-  { id: "medication", label: "Medication", icon: Pill },
   { id: "shadows", label: "Shadows", icon: Users },
   { id: "locks", label: "Locks", icon: Lock },
 ];
