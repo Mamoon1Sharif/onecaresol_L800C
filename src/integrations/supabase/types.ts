@@ -1446,6 +1446,7 @@ export type Database = {
           check_in_lng: number | null
           check_in_time: string | null
           check_out_time: string | null
+          clockin_method: string | null
           company_id: string
           created_at: string
           duration: number
@@ -1464,6 +1465,7 @@ export type Database = {
           check_in_lng?: number | null
           check_in_time?: string | null
           check_out_time?: string | null
+          clockin_method?: string | null
           company_id?: string
           created_at?: string
           duration?: number
@@ -1482,6 +1484,7 @@ export type Database = {
           check_in_lng?: number | null
           check_in_time?: string | null
           check_out_time?: string | null
+          clockin_method?: string | null
           company_id?: string
           created_at?: string
           duration?: number
