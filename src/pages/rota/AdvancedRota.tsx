@@ -291,13 +291,33 @@ export default function AdvancedRota() {
       // Determine dayIndex based on visit_date
       const vDate = v.visit_date; // "YYYY-MM-DD"
       const dayIdx = days.findIndex(d => formatDateISO(d) === vDate);
-      if (dayIdx < 0) return; // outside our visible range
+  // Build shifts from database visits, then apply any user overrides
+  const shifts = useMemo<Shift[]>(() => {
+    // Compute dynamic status from current time when DB has no concrete one yet.
+    const applyDynamicStatus = (s: Shift): Shift => {
+      if (s.status === "complete" || s.status === "missed" || s.status === "in-progress") return s;
+      const day = days[s.dayIndex] ?? days[0];
+      if (!day) return s;
+      const base = new Date(day);
+      base.setHours(0, 0, 0, 0);
+      const startMs = base.getTime() + s.start * 3_600_000;
+      const endMs = base.getTime() + s.end * 3_600_000;
+      const t = now.getTime();
+      if (t >= endMs) return { ...s, status: "complete" };
+      if (t >= startMs) return { ...s, status: "in-progress" };
+      return s;
+    };
+
+    const allShifts: Shift[] = [];
+    (rawVisits as any[]).forEach((v) => {
+      const vDate = v.visit_date;
+      const dayIdx = days.findIndex(d => formatDateISO(d) === vDate);
+      if (dayIdx < 0) return;
       const shift = dbVisitToShift(v, dayIdx);
       const ov = overrides[shift.id];
-      allShifts.push(ov ? { ...shift, ...ov } : shift);
+      allShifts.push(applyDynamicStatus(ov ? { ...shift, ...ov } : shift));
     });
 
-    // Inject synthetic shifts assigned from the Conflicts flow
     for (const a of getAssignedShifts()) {
       const dayIdx = days.findIndex((d) => formatDateISO(d) === a.dateIso);
       if (dayIdx < 0) continue;
@@ -316,10 +336,9 @@ export default function AdvancedRota() {
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
-      allShifts.push(ov ? { ...base, ...ov } : base);
+      allShifts.push(applyDynamicStatus(ov ? { ...base, ...ov } : base));
     }
 
-    // Inject unallocated shifts from the Conflicts pool
     const unassignedPool = buildUnassignedShifts(careReceivers as any);
     for (const u of unassignedPool) {
       if (isShiftAssigned(u.ref)) continue;
@@ -338,11 +357,11 @@ export default function AdvancedRota() {
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
-      allShifts.push(ov ? { ...base, ...ov } : base);
+      allShifts.push(applyDynamicStatus(ov ? { ...base, ...ov } : base));
     }
 
     return allShifts;
-  }, [rawVisits, days, overrides, assignedTick, careReceivers]);
+  }, [rawVisits, days, overrides, assignedTick, careReceivers, now]);
 
   // Detect per-caregiver overlapping shifts (conflicts).
   const conflicts = useMemo(() => {
