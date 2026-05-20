@@ -2375,6 +2375,7 @@ export type Database = {
           is_completed: boolean
           medication: string | null
           medication_id: string | null
+          notes: string | null
           title: string
         }
         Insert: {
@@ -2388,6 +2389,7 @@ export type Database = {
           is_completed?: boolean
           medication?: string | null
           medication_id?: string | null
+          notes?: string | null
           title: string
         }
         Update: {
@@ -2401,6 +2403,7 @@ export type Database = {
           is_completed?: boolean
           medication?: string | null
           medication_id?: string | null
+          notes?: string | null
           title?: string
         }
         Relationships: [
