@@ -328,7 +328,7 @@ export default function AdvancedRota() {
         client: a.client,
         ref: a.ref,
         service: a.serviceCall || "Visit",
-        status: "scheduled",
+        status: "due",
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
