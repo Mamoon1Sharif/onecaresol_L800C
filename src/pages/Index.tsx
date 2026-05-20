@@ -98,10 +98,13 @@ function visitTypeStyle(duration: number): string {
 function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
   const [showNotes, setShowNotes] = useState(false);
   const [showTasks, setShowTasks] = useState(false);
+  const [showCareNotes, setShowCareNotes] = useState(false);
   const { data: notes = [] } = useShiftNotes(v.id);
   const { data: privateNotes = [] } = useCaregiverPrivateNotes(v);
   const { data: visitNotes = [] } = useVisitNotesByShift(v);
   const { data: rawTasks = [] } = useShiftTasks(v.id);
+  const { data: careTaskNotes = [] } = useVisitCareTaskNotes(v);
+  const { data: medicationNotes = [] } = useVisitMedicationNotes(v);
 
   // Dedup tasks by title for display
   const tasks = useMemo(() => {
@@ -115,6 +118,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
 
   const lateMins = getLateMins(v);
   const completedTasks = tasks.filter((t: any) => t.is_completed).length;
+  const careNotesCount = (careTaskNotes as any[]).length + (medicationNotes as any[]).length;
 
   return (
     <>
