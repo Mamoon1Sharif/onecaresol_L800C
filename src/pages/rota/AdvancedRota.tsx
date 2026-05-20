@@ -368,7 +368,14 @@ export default function AdvancedRota() {
   /* ---------------------------- Drag & Drop -------------------------------- */
 
   function shiftHasStarted(s: Shift) {
-    return s.status === "in-progress" || s.status === "complete" || s.status === "missed";
+    if (s.status === "in-progress" || s.status === "complete" || s.status === "missed") return true;
+    // Also lock any shift whose scheduled start time has already passed
+    const day = days[s.dayIndex] ?? days[0] ?? date;
+    if (!day) return false;
+    const base = new Date(day);
+    base.setHours(0, 0, 0, 0);
+    const startMs = base.getTime() + s.start * 3_600_000;
+    return startMs <= now.getTime();
   }
 
   function onPointerDownShift(e: React.PointerEvent, s: Shift) {
@@ -1277,7 +1284,13 @@ export default function AdvancedRota() {
         onOpenChange={(o) => !o && setEditing(null)}
         shift={editing}
         onSave={handleSaveEdit}
+        readOnly={(() => {
+          if (!editing) return false;
+          const s = shifts.find((x) => x.id === editing.id);
+          return s ? shiftHasStarted(s) : false;
+        })()}
       />
+
 
       <AlertDialog open={!!pendingMove} onOpenChange={(o) => !o && setPendingMove(null)}>
         <AlertDialogContent>

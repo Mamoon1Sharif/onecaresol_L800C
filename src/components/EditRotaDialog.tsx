@@ -85,6 +85,8 @@ interface Props {
     tasks: string;
     medCall: string;
   }) => void;
+  /** When true, the dialog is view-only: all inputs disabled and Save is hidden. */
+  readOnly?: boolean;
 }
 
 type Tab =
@@ -149,7 +151,7 @@ function statusTone(status: string) {
   return "text-foreground";
 }
 
-export function EditRotaDialog({ open, onOpenChange, shift, onSave }: Props) {
+export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = false }: Props) {
   const [active, setActive] = useState<Tab>("edit");
 
   // form state
@@ -217,8 +219,15 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave }: Props) {
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1">
+          {readOnly && (
+            <div className="px-5 py-2 text-[11px] font-medium text-amber-900 bg-amber-100 border-b border-amber-300">
+              This shift has already started or completed — view only. It can't be edited or moved.
+            </div>
+          )}
+          <fieldset disabled={readOnly} className={cn("contents", readOnly && "[&_input]:cursor-not-allowed [&_button]:cursor-not-allowed")}>
           {/* Summary table */}
           <div className="border-b border-border">
+
             <div className="overflow-x-auto">
               <table className="w-full text-xs min-w-[1100px]">
                 <thead>
@@ -447,11 +456,13 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave }: Props) {
                     </FormRow>
                   </div>
 
-                  <div className="flex justify-center mt-7">
-                    <Button onClick={handleSave} className="h-8 px-6 text-xs">
-                      Update Shift
-                    </Button>
-                  </div>
+                  {!readOnly && (
+                    <div className="flex justify-center mt-7">
+                      <Button onClick={handleSave} className="h-8 px-6 text-xs">
+                        Update Shift
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -516,7 +527,9 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave }: Props) {
               )}
             </div>
           </div>
+          </fieldset>
         </div>
+
       </DialogContent>
     </Dialog>
   );
