@@ -239,8 +239,9 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl p-0 gap-0 bg-card max-h-[92vh] overflow-hidden flex flex-col">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl p-0 gap-0 bg-card max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader className="px-5 py-3 border-b border-border bg-muted/40 shrink-0">
           <DialogTitle className="text-base font-semibold text-foreground">
             Edit Rota Ref: <span className="text-primary">{shift.ref}</span>
@@ -623,33 +624,34 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
             </div>
           </fieldset>
         </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
 
-    <AlertDialog
-      open={!!pendingCriticalAction}
-      onOpenChange={(open) => {
-        if (!open) setPendingCriticalAction(null);
-      }}
-    >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
-          <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              pendingCriticalAction?.onConfirm();
-              setPendingCriticalAction(null);
-            }}
-          >
-            {pendingCriticalAction?.actionLabel ?? "Confirm"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <AlertDialog
+        open={!!pendingCriticalAction}
+        onOpenChange={(open) => {
+          if (!open) setPendingCriticalAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                pendingCriticalAction?.onConfirm();
+                setPendingCriticalAction(null);
+              }}
+            >
+              {pendingCriticalAction?.actionLabel ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
