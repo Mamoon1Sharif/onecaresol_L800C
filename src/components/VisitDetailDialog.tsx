@@ -567,7 +567,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                       </Button>
                     </div>
                     <div className="flex-1 min-w-[240px]">
-                      <a className="text-primary hover:underline font-medium text-sm cursor-pointer">{visit.teamMember}</a>
+                      {visit.caregiver?.id || visit.caregiver_id ? (
+                        <Link to={`/caregivers/${visit.caregiver?.id || visit.caregiver_id}`} onClick={() => onOpenChange(false)} className="text-primary hover:underline font-medium text-sm cursor-pointer">{visit.teamMember}</Link>
+                      ) : (
+                        <span className="font-medium text-sm">{visit.teamMember}</span>
+                      )}
                       {(editStatus || visit.status || "").toLowerCase() === "missed" && (
                         <div className="mt-3 text-xs text-destructive font-medium">Shift was missed — caregiver did not attend.</div>
                       )}
