@@ -561,22 +561,23 @@ export function useVisitCareTaskNotes(visit: any) {
   });
 }
 
-// ── Medication notes for a visit's receiver on the visit date ──
+// ── Shift task medication notes for a specific completed visit (today) ──
 export function useVisitMedicationNotes(visit: any) {
+  const today = new Date().toISOString().slice(0, 10);
+  const isToday = visit?.visit_date === today;
+  const isCompleted = !!visit?.check_out_time;
   return useQuery({
-    queryKey: ["visit_medication_notes", visit?.care_receiver_id, visit?.visit_date],
-    enabled: !!visit?.care_receiver_id,
+    queryKey: ["visit_shift_task_medician_notes", visit?.id],
+    enabled: !!visit?.id && isToday && isCompleted,
     queryFn: async () => {
-      let q = supabase
-        .from("medications")
-        .select("id, medication, dosage, notes, time_of_day, scheduled_time, date, administered_by")
-        .eq("care_receiver_id", visit.care_receiver_id)
-        .order("date", { ascending: false })
-        .limit(50);
-      if (visit?.visit_date) q = q.eq("date", visit.visit_date);
-      const { data, error } = await q;
+      const { data, error } = await supabase
+        .from("shift_task_medician" as any)
+        .select("id, title, medication, dosage, notes, completed_by, completed_at, is_completed")
+        .eq("daily_visit_id", visit.id)
+        .not("notes", "is", null)
+        .order("completed_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []).filter((r: any) => r.notes && r.notes.trim());
     },
   });
 }
