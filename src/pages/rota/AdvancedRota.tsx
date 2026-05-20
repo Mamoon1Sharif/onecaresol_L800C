@@ -688,7 +688,32 @@ export default function AdvancedRota() {
         service: updates.service,
       },
     }));
+
+    // Persist to DB for real visits; synthetic shifts already live in localStorage.
+    const isSynthetic =
+      editing.id.startsWith("unassigned-") || editing.id.startsWith("assigned-");
+    if (!isSynthetic) {
+      const s = shifts.find((x) => x.id === editing.id);
+      const staff = s?.staff ?? editing.staff;
+      persistDbVisitMove(editing.id, staff, newStart, newEnd);
+    } else {
+      // Update the local-storage synthetic store with new times.
+      const s = shifts.find((x) => x.id === editing.id);
+      if (s) {
+        const day = days[s.dayIndex] ?? days[0];
+        saveAssignedShift({
+          ref: s.ref,
+          dateIso: formatDateISO(day),
+          start: fmtTime(newStart),
+          end: fmtTime(newEnd),
+          client: s.client,
+          staff: s.staff,
+          serviceCall: updates.service,
+        });
+      }
+    }
   }
+
 
   function assignDroppedShift(
     shiftId: string,
