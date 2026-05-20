@@ -326,16 +326,31 @@ const Conflicts = () => {
                         <td className="p-1.5 border-r border-border text-center font-mono text-[11px] bg-rose-50/40">—</td>
                         <td className="p-1.5 border-r border-border text-center font-mono text-[11px]">—</td>
                         <td className={`p-1.5 border-r border-border text-[11px] font-medium ${r.teamMember === "Unallocated" ? teamCellColor : "text-foreground"}`}>
-                          {r.teamMember === "Unallocated" && !isCancelled ? (
-                            <button
-                              type="button"
-                              className="hover:underline cursor-pointer"
-                              onClick={() => nav(`/rota/add?receiverId=${r.receiverId}&ref=${r.ref}&date=${r.date}&start=${r.start}&end=${r.end}`)}
-                              title="Click to allocate a care giver"
-                            >
-                              {r.teamMember}
-                            </button>
-                          ) : r.teamMember}
+                          {r.teamMember === "Unallocated" && !isCancelled ? (() => {
+                            // Block allocation if the shift's start time has already passed
+                            const [sy, sm, sd] = (r.dateIso || "").split("-").map(Number);
+                            const [sh, smin] = (r.start || "00:00").split(":").map(Number);
+                            const shiftStart = sy
+                              ? new Date(sy, (sm || 1) - 1, sd || 1, sh || 0, smin || 0, 0, 0)
+                              : null;
+                            const isPast = shiftStart ? shiftStart.getTime() <= Date.now() : false;
+                            return (
+                              <button
+                                type="button"
+                                className={`hover:underline ${isPast ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}
+                                onClick={() => {
+                                  if (isPast) {
+                                    toast.error("Shift time has already passed — can't allocate.");
+                                    return;
+                                  }
+                                  nav(`/rota/add?receiverId=${r.receiverId}&ref=${r.ref}&date=${r.date}&start=${r.start}&end=${r.end}`);
+                                }}
+                                title={isPast ? "Shift time has passed — cannot allocate" : "Click to allocate a care giver"}
+                              >
+                                {r.teamMember}
+                              </button>
+                            );
+                          })() : r.teamMember}
                         </td>
                         <td className="p-1.5 border-r border-border text-[11px] text-foreground/80">{r.serviceCall}</td>
                         <td className="p-1.5 border-r border-border text-center"></td>
