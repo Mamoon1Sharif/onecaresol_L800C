@@ -1016,18 +1016,38 @@ function MedicationFeed({ visitId }: { visitId: string }) {
         if (!cancelled) { setMeds([]); setLoading(false); }
         return;
       }
-      const { data, error } = await supabase
-        .from("medications")
-        .select("id,date,medication,dosage,administered_by,notes,time_of_day,scheduled_time,created_at")
-        .eq("care_receiver_id", visit.care_receiver_id)
-        .eq("date", String(visit.visit_date))
-        .order("created_at", { ascending: false });
+
+      const [{ data: meds = [], error: medErr }, { data: shiftMeds = [], error: shiftErr }] = await Promise.all([
+        supabase
+          .from("medications")
+          .select("id,date,medication,dosage,administered_by,notes,time_of_day,scheduled_time,created_at")
+          .eq("care_receiver_id", visit.care_receiver_id)
+          .eq("date", String(visit.visit_date))
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("shift_task_medician")
+          .select("id,medication,dosage,created_at")
+          .eq("daily_visit_id", visitId)
+          .order("created_at", { ascending: false }),
+      ]);
+
       if (cancelled) return;
-      if (error) {
-        toast.error("Failed to load medications: " + error.message);
+      if (medErr || shiftErr) {
+        toast.error("Failed to load medications: " + (medErr?.message ?? shiftErr?.message ?? "unknown error"));
         setMeds([]);
       } else {
-        setMeds((data ?? []) as MedicationRecord[]);
+        const additional = (shiftMeds ?? []).map((item: any) => ({
+          id: item.id,
+          date: String(visit.visit_date),
+          medication: item.medication || "Medication",
+          dosage: item.dosage || "",
+          administered_by: null,
+          notes: null,
+          time_of_day: null,
+          scheduled_time: null,
+          created_at: item.created_at,
+        }));
+        setMeds([...(meds ?? []), ...additional] as MedicationRecord[]);
       }
       setLoading(false);
     })();
