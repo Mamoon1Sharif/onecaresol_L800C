@@ -286,13 +286,6 @@ export default function AdvancedRota() {
 
   // Build shifts from database visits, then apply any user overrides
   const shifts = useMemo<Shift[]>(() => {
-    const allShifts: Shift[] = [];
-    (rawVisits as any[]).forEach((v) => {
-      // Determine dayIndex based on visit_date
-      const vDate = v.visit_date; // "YYYY-MM-DD"
-      const dayIdx = days.findIndex(d => formatDateISO(d) === vDate);
-  // Build shifts from database visits, then apply any user overrides
-  const shifts = useMemo<Shift[]>(() => {
     // Compute dynamic status from current time when DB has no concrete one yet.
     const applyDynamicStatus = (s: Shift): Shift => {
       if (s.status === "complete" || s.status === "missed" || s.status === "in-progress") return s;
