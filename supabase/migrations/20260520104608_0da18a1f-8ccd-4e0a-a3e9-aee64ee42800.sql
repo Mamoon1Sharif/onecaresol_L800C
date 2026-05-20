@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_visits ADD COLUMN clockin_method text CHECK (clockin_method IN ('manual_code','nfc','qr','lat_long_swipe'));
