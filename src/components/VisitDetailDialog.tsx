@@ -417,7 +417,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                           <td className="p-1.5 border-r border-border text-center"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" /></td>
                           <td className="p-1.5 border-r border-border text-center text-muted-foreground/40 text-[11px]">—</td>
                           <td className="p-1.5 border-r border-border">
-                            <a className="text-primary hover:underline cursor-pointer text-[11px]">{visit.serviceUser}</a>
+                            {visit.receiver?.id || visit.receiver_id ? (
+                              <Link to={`/carereceivers/${visit.receiver?.id || visit.receiver_id}`} onClick={() => onOpenChange(false)} className="text-primary hover:underline cursor-pointer text-[11px]">{visit.serviceUser}</Link>
+                            ) : (
+                              <span className="text-[11px]">{visit.serviceUser}</span>
+                            )}
                           </td>
                           <td className="p-1.5 border-r border-border text-center font-mono text-[11px] bg-emerald-50">{editStart || visit.scheduledStart}</td>
                           <td className="p-1.5 border-r border-border text-center font-mono text-[11px] bg-rose-50">{editEnd || visit.scheduledEnd}</td>
