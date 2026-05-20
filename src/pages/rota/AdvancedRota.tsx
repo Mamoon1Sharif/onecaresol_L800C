@@ -23,11 +23,10 @@ import {
   GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
+import { useCareGivers, useCareReceivers, useDailyVisitsRange, useUpdateDailyVisit } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
-import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
+import { getAssignedShifts, subscribeAssignedShifts, timeToHours, saveAssignedShift, removeAssignedShift, isShiftAssigned } from "@/lib/assigned-shifts";
 import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
-import { isShiftAssigned } from "@/lib/assigned-shifts";
 import { supabase } from "@/integrations/supabase/client";
 import { EditRotaDialog, type EditRotaShift } from "@/components/EditRotaDialog";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +46,7 @@ import {
 /*  Data                                                                       */
 /* -------------------------------------------------------------------------- */
 
-type ShiftStatus = "scheduled" | "complete" | "in-progress" | "missed" | "oncall";
+type ShiftStatus = "scheduled" | "due" | "complete" | "in-progress" | "missed" | "oncall";
 
 interface Shift {
   id: string;
@@ -156,6 +155,8 @@ function statusStyles(s: ShiftStatus) {
       return "bg-cyan-200/90 border-cyan-400 text-cyan-900";
     case "scheduled":
       return "bg-blue-200/90 border-blue-400 text-blue-900";
+    case "due":
+      return "bg-amber-200/90 border-amber-500 text-amber-950";
     case "missed":
       return "bg-rose-200/90 border-rose-400 text-rose-900";
     case "oncall":
@@ -174,6 +175,7 @@ function statusLabel(s: ShiftStatus): string {
     case "complete": return "Complete";
     case "in-progress": return "In Progress";
     case "scheduled": return "Scheduled";
+    case "due": return "Due";
     case "missed": return "Missed";
     case "oncall": return "On Call";
   }
@@ -183,12 +185,19 @@ export default function AdvancedRota() {
   const navigate = useNavigate();
   const { data: careGivers = [] } = useCareGivers();
   const { data: careReceivers = [] } = useCareReceivers();
+  const updateDailyVisit = useUpdateDailyVisit();
 
   const UNASSIGNED = "Unassigned Shifts";
   const staffRows = useMemo(
     () => careGivers.map((cg: any) => cg.name || "Unnamed Caregiver"),
     [careGivers]
   );
+
+  const cgIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const cg of careGivers as any[]) m.set((cg.name || "").toLowerCase(), cg.id);
+    return m;
+  }, [careGivers]);
 
   const [date, setDate] = useState(() => startOfWeekMonday(new Date()));
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('weekly');
@@ -235,6 +244,13 @@ export default function AdvancedRota() {
   const gridRef = useRef<HTMLDivElement>(null);
   const unassignedPanelRef = useRef<HTMLDivElement>(null);
 
+  // Live "now" tick for the daily timeline indicator (updates every 30s)
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const dateLabel = useMemo(() => {
     if (viewMode === 'daily') return formatDateShort(date);
     const weekEnd = addDays(date, 6);
@@ -273,18 +289,31 @@ export default function AdvancedRota() {
 
   // Build shifts from database visits, then apply any user overrides
   const shifts = useMemo<Shift[]>(() => {
+    // Compute dynamic status from current time when DB has no concrete one yet.
+    const applyDynamicStatus = (s: Shift): Shift => {
+      if (s.status === "complete" || s.status === "missed" || s.status === "in-progress") return s;
+      const day = days[s.dayIndex] ?? days[0];
+      if (!day) return s;
+      const base = new Date(day);
+      base.setHours(0, 0, 0, 0);
+      const startMs = base.getTime() + s.start * 3_600_000;
+      const endMs = base.getTime() + s.end * 3_600_000;
+      const t = now.getTime();
+      if (t >= endMs) return { ...s, status: "complete" };
+      if (t >= startMs) return { ...s, status: "in-progress" };
+      return s;
+    };
+
     const allShifts: Shift[] = [];
     (rawVisits as any[]).forEach((v) => {
-      // Determine dayIndex based on visit_date
-      const vDate = v.visit_date; // "YYYY-MM-DD"
+      const vDate = v.visit_date;
       const dayIdx = days.findIndex(d => formatDateISO(d) === vDate);
-      if (dayIdx < 0) return; // outside our visible range
+      if (dayIdx < 0) return;
       const shift = dbVisitToShift(v, dayIdx);
       const ov = overrides[shift.id];
-      allShifts.push(ov ? { ...shift, ...ov } : shift);
+      allShifts.push(applyDynamicStatus(ov ? { ...shift, ...ov } : shift));
     });
 
-    // Inject synthetic shifts assigned from the Conflicts flow
     for (const a of getAssignedShifts()) {
       const dayIdx = days.findIndex((d) => formatDateISO(d) === a.dateIso);
       if (dayIdx < 0) continue;
@@ -303,10 +332,9 @@ export default function AdvancedRota() {
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
-      allShifts.push(ov ? { ...base, ...ov } : base);
+      allShifts.push(applyDynamicStatus(ov ? { ...base, ...ov } : base));
     }
 
-    // Inject unallocated shifts from the Conflicts pool
     const unassignedPool = buildUnassignedShifts(careReceivers as any);
     for (const u of unassignedPool) {
       if (isShiftAssigned(u.ref)) continue;
@@ -325,11 +353,11 @@ export default function AdvancedRota() {
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
-      allShifts.push(ov ? { ...base, ...ov } : base);
+      allShifts.push(applyDynamicStatus(ov ? { ...base, ...ov } : base));
     }
 
     return allShifts;
-  }, [rawVisits, days, overrides, assignedTick, careReceivers]);
+  }, [rawVisits, days, overrides, assignedTick, careReceivers, now]);
 
   // Detect per-caregiver overlapping shifts (conflicts).
   const conflicts = useMemo(() => {
@@ -362,7 +390,14 @@ export default function AdvancedRota() {
   /* ---------------------------- Drag & Drop -------------------------------- */
 
   function shiftHasStarted(s: Shift) {
-    return s.status === "in-progress" || s.status === "complete" || s.status === "missed";
+    if (s.status === "in-progress" || s.status === "complete" || s.status === "missed") return true;
+    // Also lock any shift whose scheduled start time has already passed
+    const day = days[s.dayIndex] ?? days[0] ?? date;
+    if (!day) return false;
+    const base = new Date(day);
+    base.setHours(0, 0, 0, 0);
+    const startMs = base.getTime() + s.start * 3_600_000;
+    return startMs <= now.getTime();
   }
 
   function onPointerDownShift(e: React.PointerEvent, s: Shift) {
@@ -541,28 +576,101 @@ export default function AdvancedRota() {
     };
   }, [drag, hoverGhost, shifts]);
 
+  function persistDbVisitMove(
+    dbId: string,
+    toStaff: string,
+    toStart: number,
+    toEnd: number,
+  ) {
+    const startH = Math.floor(toStart);
+    const startM = Math.round((toStart - startH) * 60);
+    const durationMin = Math.max(1, Math.round((toEnd - toStart) * 60));
+    const newCgId =
+      toStaff === UNASSIGNED ? null : cgIdByName.get(toStaff.toLowerCase()) ?? null;
+    updateDailyVisit.mutate(
+      {
+        id: dbId,
+        care_giver_id: newCgId,
+        start_hour: startH,
+        start_minute: startM,
+        duration_minutes: durationMin,
+      },
+      {
+        onError: (err: any) => {
+          toast.error("Failed to save shift to database", { description: err?.message });
+        },
+      }
+    );
+  }
+
   function confirmPendingMove() {
     if (!pendingMove) return;
-    setOverrides((prev) => ({
-      ...prev,
-      [pendingMove.id]: {
+
+    const targetDay = days[pendingMove.toDayIndex] ?? days[0];
+    const dateIso = formatDateISO(targetDay);
+    const isUnassignedSynthetic = pendingMove.id.startsWith("unassigned-");
+    const isAssignedSynthetic = pendingMove.id.startsWith("assigned-");
+    const movingToUnassigned = pendingMove.toStaff === "Unassigned Shifts";
+
+    if (movingToUnassigned) {
+      // Send back to the unassigned pool — drop any persisted assignment.
+      if (isAssignedSynthetic || isUnassignedSynthetic) {
+        removeAssignedShift(pendingMove.ref);
+      } else {
+        // Real DB-backed shift — clear the caregiver in the DB.
+        persistDbVisitMove(pendingMove.id, UNASSIGNED, pendingMove.toStart, pendingMove.toEnd);
+      }
+      setOverrides((prev) => {
+        const next = { ...prev };
+        delete next[pendingMove.id];
+        return next;
+      });
+    } else if (isUnassignedSynthetic || isAssignedSynthetic) {
+      // Synthetic shifts (from the conflicts pool) live in local storage.
+      saveAssignedShift({
+        ref: pendingMove.ref,
+        dateIso,
+        start: fmtTime(pendingMove.toStart),
+        end: fmtTime(pendingMove.toEnd),
+        client: pendingMove.client,
         staff: pendingMove.toStaff,
-        start: pendingMove.toStart,
-        end: pendingMove.toEnd,
-        dayIndex: pendingMove.toDayIndex,
-      },
-    }));
+        serviceCall: pendingMove.service,
+      });
+      setOverrides((prev) => {
+        const next = { ...prev };
+        delete next[pendingMove.id];
+        return next;
+      });
+    } else {
+      // Real DB-backed shift — persist to database AND keep optimistic override.
+      persistDbVisitMove(pendingMove.id, pendingMove.toStaff, pendingMove.toStart, pendingMove.toEnd);
+      setOverrides((prev) => ({
+        ...prev,
+        [pendingMove.id]: {
+          staff: pendingMove.toStaff,
+          start: pendingMove.toStart,
+          end: pendingMove.toEnd,
+          dayIndex: pendingMove.toDayIndex,
+        },
+      }));
+    }
+
     const wasUnassigned = pendingMove.fromStaff === "Unassigned Shifts";
     toast.success(
-      wasUnassigned
-        ? `Shift assigned to ${pendingMove.toStaff}`
-        : `Shift moved to ${pendingMove.toStaff}`,
+      movingToUnassigned
+        ? `Shift moved back to Unassigned`
+        : wasUnassigned
+          ? `Shift assigned to ${pendingMove.toStaff}`
+          : `Shift moved to ${pendingMove.toStaff}`,
       {
         description: `${pendingMove.client} • ${fmtTime(pendingMove.toStart)}–${fmtTime(pendingMove.toEnd)} • Ref ${pendingMove.ref}`,
       }
     );
     setPendingMove(null);
   }
+
+
+
 
   function handleSaveEdit(updates: {
     service: string;
@@ -583,7 +691,32 @@ export default function AdvancedRota() {
         service: updates.service,
       },
     }));
+
+    // Persist to DB for real visits; synthetic shifts already live in localStorage.
+    const isSynthetic =
+      editing.id.startsWith("unassigned-") || editing.id.startsWith("assigned-");
+    if (!isSynthetic) {
+      const s = shifts.find((x) => x.id === editing.id);
+      const staff = s?.staff ?? editing.staff;
+      persistDbVisitMove(editing.id, staff, newStart, newEnd);
+    } else {
+      // Update the local-storage synthetic store with new times.
+      const s = shifts.find((x) => x.id === editing.id);
+      if (s) {
+        const day = days[s.dayIndex] ?? days[0];
+        saveAssignedShift({
+          ref: s.ref,
+          dateIso: formatDateISO(day),
+          start: fmtTime(newStart),
+          end: fmtTime(newEnd),
+          client: s.client,
+          staff: s.staff,
+          serviceCall: updates.service,
+        });
+      }
+    }
   }
+
 
   function assignDroppedShift(
     shiftId: string,
@@ -932,7 +1065,7 @@ export default function AdvancedRota() {
                 className="px-2 flex items-center text-[11px] font-semibold uppercase border-b border-border bg-muted text-muted-foreground"
                 style={{ height: viewMode === 'daily' ? HEADER_H : headerHeight + 28 }}
               >
-                Staff / {viewMode === 'daily' ? 'Time' : 'Day'}
+                Care giver / {viewMode === 'daily' ? 'Time' : 'Day'}
               </div>
               {staffRows.map((name) => (
                 <div
@@ -977,7 +1110,26 @@ export default function AdvancedRota() {
                       </div>
                     </div>
 
+                    {/* Live current-time indicator (only when viewing today) */}
+                    {isSameDay(date, now) && (() => {
+                      const hoursNow = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+                      const left = hoursNow * PX_PER_HOUR;
+                      return (
+                        <div
+                          className="pointer-events-none absolute z-20"
+                          style={{ left, top: HEADER_H, bottom: 0, width: 0 }}
+                        >
+                          <div className="absolute -top-1 -left-1 h-2 w-2 rounded-full bg-rose-500 shadow" />
+                          <div className="absolute top-0 left-0 h-full w-px bg-rose-500/90 shadow-[0_0_6px_hsl(0_84%_60%/0.6)]" />
+                          <div className="absolute -top-4 left-1 text-[10px] font-semibold text-rose-600 bg-background/80 px-1 rounded">
+                            {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Rows (daily) */}
+
                     {staffRows.map((staff, rowIdx) => (
                       <div
                         key={staff}
@@ -1209,7 +1361,13 @@ export default function AdvancedRota() {
         onOpenChange={(o) => !o && setEditing(null)}
         shift={editing}
         onSave={handleSaveEdit}
+        readOnly={(() => {
+          if (!editing) return false;
+          const s = shifts.find((x) => x.id === editing.id);
+          return s ? shiftHasStarted(s) : false;
+        })()}
       />
+
 
       <AlertDialog open={!!pendingMove} onOpenChange={(o) => !o && setPendingMove(null)}>
         <AlertDialogContent>

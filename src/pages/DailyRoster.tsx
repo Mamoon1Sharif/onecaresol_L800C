@@ -182,7 +182,7 @@ const DailyRoster = () => {
         status,
         isFuture,
         accepted,
-        serviceUser: `${cr.name ?? "Unknown"}${postcode ? "-" + postcode.replace(" ", "") : ""}`,
+        serviceUser: cr.name ?? "Unknown",
         serviceUserRaw: cr.name ?? "Unknown",
         scheduledStart: fmtHour(start, startMin),
         scheduledEnd: fmtHour(endH, endM),
@@ -217,12 +217,25 @@ const DailyRoster = () => {
       const endH = timeToHours(a.end);
       const durMins = Math.max(0, Math.round((endH - startH) * 60));
       const fmtDur = `${String(Math.floor(durMins / 60)).padStart(2, "0")}:${String(durMins % 60).padStart(2, "0")}`;
+
+      // Dynamic status from current time (no real check-in for synthetic shifts)
+      const [ay, am, ad] = a.dateIso.split("-").map(Number);
+      const sH = Math.floor(startH);
+      const sM = Math.round((startH - sH) * 60);
+      const synStart = new Date(ay, (am || 1) - 1, ad || 1, sH, sM, 0, 0);
+      const synEnd = new Date(synStart.getTime() + durMins * 60 * 1000);
+      let synStatus: string;
+      if (now.getTime() < synStart.getTime()) synStatus = "Due";
+      else if (now.getTime() < synEnd.getTime()) synStatus = "Late";
+      else synStatus = "Missed";
+      const synIsFuture = now.getTime() < synStart.getTime();
+
       return {
         id: `assigned-${a.ref}`,
         ref: a.ref,
         date: getDateShort(dayOffset),
-        status: "Allocated",
-        isFuture: true,
+        status: synStatus,
+        isFuture: synIsFuture,
         accepted: true,
         serviceUser: a.client,
         serviceUserRaw: a.client.split(" - ")[0],
@@ -245,6 +258,7 @@ const DailyRoster = () => {
         caregiver: { name: a.staff },
       } as any;
     });
+
 
     // Inject unallocated shifts from the Conflicts pool for this date
     const unassignedForDay = getUnassignedShiftsForDate(careReceivers as any, dateStr);

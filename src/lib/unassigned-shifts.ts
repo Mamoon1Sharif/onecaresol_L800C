@@ -61,7 +61,7 @@ export function buildUnassignedShifts(careReceivers: { id: string; name: string;
     const endM = endTotal % 60;
     const fmt = (h: number, m: number) => `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
     const cr = pool[i % pool.length];
-    const label = cr.address ? `${cr.name} - ${cr.address}` : cr.name;
+    const label = cr.name;
     rows.push({
       id: `cf-${i}`,
       ref: String(147039184 + i * 137),
