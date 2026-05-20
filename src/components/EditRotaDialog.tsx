@@ -278,7 +278,13 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                       <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
                       <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
                       <td className="px-2 py-2 border-r border-border whitespace-nowrap">
-                        <span className="text-primary underline cursor-pointer">{shift.client} - W...</span>
+                        <button
+                          type="button"
+                          onClick={goToServiceMember}
+                          className="text-primary underline hover:text-primary/80 cursor-pointer bg-transparent p-0"
+                        >
+                          {shift.client} - W...
+                        </button>
                       </td>
                       <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.start)}</td>
                       <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.end)}</td>
