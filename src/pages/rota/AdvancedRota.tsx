@@ -175,6 +175,7 @@ function statusLabel(s: ShiftStatus): string {
     case "complete": return "Complete";
     case "in-progress": return "In Progress";
     case "scheduled": return "Scheduled";
+    case "due": return "Due";
     case "missed": return "Missed";
     case "oncall": return "On Call";
   }
