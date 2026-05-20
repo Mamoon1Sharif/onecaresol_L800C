@@ -85,6 +85,8 @@ type Tab =
   | "service-user"
   | "manual-in"
   | "manual-out"
+  | "tasks"
+  | "medication"
   | "shadows"
   | "locks";
 
@@ -93,6 +95,8 @@ const TABS: { id: Tab; label: string; icon: typeof Pencil }[] = [
   { id: "service-user", label: "Go to Service Members Profile", icon: UserCog },
   { id: "manual-in", label: "Manual Clock In", icon: LogIn },
   { id: "manual-out", label: "Manual Clock Out", icon: LogOut },
+  { id: "tasks", label: "Tasks", icon: CheckSquare },
+  { id: "medication", label: "Medication", icon: Pill },
   { id: "shadows", label: "Shadows", icon: Users },
   { id: "locks", label: "Locks", icon: Lock },
 ];
