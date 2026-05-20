@@ -29,6 +29,9 @@ import {
   ChevronRight,
   Info,
   CheckCircle2,
+  KeyRound,
+  Bell,
+  DoorOpen,
 } from "lucide-react";
 import { useCareReceivers, useCareGivers, useUpsertShift, useMedications } from "@/hooks/use-care-data";
 import { useCaregiverHolidayEntries, caregiverUnavailableReason } from "@/hooks/use-caregiver-availability";
