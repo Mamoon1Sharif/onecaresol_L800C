@@ -699,6 +699,32 @@ export function LiveRotaShiftDialog({
         </DialogContent>
       </Dialog>
 
+      <AlertDialog
+        open={!!pendingCriticalAction}
+        onOpenChange={(open) => {
+          if (!open) setPendingCriticalAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={pendingCriticalAction?.destructive ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : undefined}
+              onClick={async () => {
+                await pendingCriticalAction?.onConfirm();
+                setPendingCriticalAction(null);
+              }}
+            >
+              {pendingCriticalAction?.actionLabel ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ClockEditDialog
         mode={clockEdit}
         staff={current.staff}
