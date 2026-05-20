@@ -375,12 +375,25 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
 
           <ScrollArea className="h-[calc(92vh-56px)]">
             <div className="p-4 space-y-6">
+              {isImmutable && (
+                <div className="rounded-sm border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-medium text-amber-900">
+                  This rota is already in progress or completed, so critical changes are locked.
+                </div>
+              )}
 
               {/* ============== LIVE ROTA SHIFTS ============== */}
               <section>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-semibold text-primary">Live Rota Shift(s)</h3>
-                  <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs gap-1.5" onClick={() => setEditOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={isImmutable}
+                    className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs gap-1.5"
+                    onClick={() => {
+                      if (guardImmutable()) return;
+                      setEditOpen(true);
+                    }}
+                  >
                     <Pencil className="h-3.5 w-3.5" /> Edit Shift Details
                   </Button>
                 </div>
@@ -590,8 +603,12 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                       />
                       <Button
                         size="sm"
+                        disabled={isImmutable}
                         className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs w-full gap-1.5"
-                        onClick={() => setMemberRemoved(true)}
+                        onClick={() => {
+                          if (guardImmutable()) return;
+                          setConfirmRemoveCaregiverOpen(true);
+                        }}
                       >
                         ↑ Remove Care Giver
                       </Button>
@@ -618,6 +635,15 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                 <div className="flex items-center justify-between border-b pb-1 mb-2">
                   <h3 className="text-sm font-semibold flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Rota Locks</h3>
                   <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setLockOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={isImmutable}
+                    className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1"
+                    onClick={() => {
+                      if (guardImmutable()) return;
+                      setLockOpen(true);
+                    }}
+                  >
                     <Plus className="h-3.5 w-3.5" /> Add Lock
                   </Button>
                 </div>
@@ -631,7 +657,22 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                           <div className="font-medium">{l.reason}</div>
                           <div className="text-[10px] text-muted-foreground">By {l.by} · {l.createdAt}</div>
                         </div>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setLocks((arr) => arr.filter((x) => x.id !== l.id))}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          disabled={isImmutable}
+                          onClick={() => {
+                            if (guardImmutable()) return;
+                            setPendingCriticalAction({
+                              title: "Remove rota lock?",
+                              description: `This will remove the lock \"${l.reason}\" from rota ${visit.ref}.`,
+                              actionLabel: "Remove lock",
+                              destructive: true,
+                              onConfirm: () => setLocks((arr) => arr.filter((x) => x.id !== l.id)),
+                            });
+                          }}
+                        >
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
@@ -711,7 +752,15 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
               <section>
                 <div className="flex items-center justify-between border-b pb-1 mb-2">
                   <h3 className="text-sm font-semibold text-primary">Shadow Shifts</h3>
-                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setShadowOpen(true)}>
+                  <Button
+                    size="sm"
+                    disabled={isImmutable}
+                    className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1"
+                    onClick={() => {
+                      if (guardImmutable()) return;
+                      setShadowOpen(true);
+                    }}
+                  >
                     <Plus className="h-3.5 w-3.5" /> Add New
                   </Button>
                 </div>
