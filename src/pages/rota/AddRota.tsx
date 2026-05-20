@@ -107,6 +107,7 @@ const AddRota = () => {
     recurring: false,
     template: false,
     entryCode: "",
+    alarmEnabled: false,
     alarmCode: "",
     entryInstructions: "",
     alarmInstructions: "",
