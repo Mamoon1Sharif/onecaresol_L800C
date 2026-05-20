@@ -46,7 +46,7 @@ import {
 /*  Data                                                                       */
 /* -------------------------------------------------------------------------- */
 
-type ShiftStatus = "scheduled" | "complete" | "in-progress" | "missed" | "oncall";
+type ShiftStatus = "scheduled" | "due" | "complete" | "in-progress" | "missed" | "oncall";
 
 interface Shift {
   id: string;
