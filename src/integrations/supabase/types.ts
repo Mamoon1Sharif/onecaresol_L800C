@@ -1440,6 +1440,8 @@ export type Database = {
       }
       daily_visits: {
         Row: {
+          alarm_code: string | null
+          alarm_instructions: string | null
           care_giver_id: string | null
           care_receiver_id: string | null
           check_in_lat: number | null
@@ -1451,6 +1453,9 @@ export type Database = {
           created_at: string
           duration: number
           duration_minutes: number | null
+          entry_code: string | null
+          entry_code_updated_at: string | null
+          entry_instructions: string | null
           id: string
           start_hour: number
           start_minute: number
@@ -1459,6 +1464,8 @@ export type Database = {
           visit_date: string
         }
         Insert: {
+          alarm_code?: string | null
+          alarm_instructions?: string | null
           care_giver_id?: string | null
           care_receiver_id?: string | null
           check_in_lat?: number | null
@@ -1470,6 +1477,9 @@ export type Database = {
           created_at?: string
           duration?: number
           duration_minutes?: number | null
+          entry_code?: string | null
+          entry_code_updated_at?: string | null
+          entry_instructions?: string | null
           id?: string
           start_hour?: number
           start_minute?: number
@@ -1478,6 +1488,8 @@ export type Database = {
           visit_date?: string
         }
         Update: {
+          alarm_code?: string | null
+          alarm_instructions?: string | null
           care_giver_id?: string | null
           care_receiver_id?: string | null
           check_in_lat?: number | null
@@ -1489,6 +1501,9 @@ export type Database = {
           created_at?: string
           duration?: number
           duration_minutes?: number | null
+          entry_code?: string | null
+          entry_code_updated_at?: string | null
+          entry_instructions?: string | null
           id?: string
           start_hour?: number
           start_minute?: number
