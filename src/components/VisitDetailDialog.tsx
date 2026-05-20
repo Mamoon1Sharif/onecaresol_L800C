@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { useUpdateDailyVisit } from "@/hooks/use-care-data";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,7 @@ const COL_ICON = "h-3.5 w-3.5 text-muted-foreground/70";
 
 export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   const qc = useQueryClient();
+  const updateDailyVisit = useUpdateDailyVisit();
   const [notes, setNotes] = useState<Note[]>([]);
   const [locks, setLocks] = useState<RotaLock[]>([]);
   const [shadow, setShadow] = useState<any[]>([]);
@@ -80,6 +82,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   const [noteOpen, setNoteOpen] = useState(false);
   const [lockOpen, setLockOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Editable shift fields (local)
   const [editStatus, setEditStatus] = useState<string>(visit?.status ?? "");
@@ -187,6 +190,59 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
 
     qc.setQueriesData({ queryKey: ["daily_visits"] }, applyUpdates);
     qc.setQueriesData({ queryKey: ["daily_visits_range"] }, applyUpdates);
+  };
+
+  const parseTime = (value: string) => {
+    const match = value.trim().match(/^([0-2]?\d):([0-5]\d)$/);
+    if (!match) return null;
+    const hour = Number(match[1]);
+    const minute = Number(match[2]);
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+    return { hour, minute };
+  };
+
+  const handleSaveEdit = async () => {
+    if (!visit) return;
+    const start = parseTime(editStart || visit.scheduledStart);
+    const end = parseTime(editEnd || visit.scheduledEnd);
+    if (!start || !end) {
+      toast.error("Enter valid start and end times in HH:MM format.");
+      return;
+    }
+
+    const startMinutes = start.hour * 60 + start.minute;
+    const endMinutes = end.hour * 60 + end.minute;
+    const durationMinutes = endMinutes >= startMinutes ? endMinutes - startMinutes : endMinutes + 24 * 60 - startMinutes;
+
+    if (durationMinutes <= 0) {
+      toast.error("End time must be after start time.");
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      await updateDailyVisit.mutateAsync({
+        id: visit.id,
+        status: editStatus,
+        start_hour: start.hour,
+        start_minute: start.minute,
+        duration: Math.floor(durationMinutes / 60),
+        duration_minutes: durationMinutes,
+      });
+      syncVisitCache({
+        status: editStatus,
+        start_hour: start.hour,
+        start_minute: start.minute,
+        duration: Math.floor(durationMinutes / 60),
+        duration_minutes: durationMinutes,
+      });
+      toast.success("Shift details updated.");
+      setEditOpen(false);
+    } catch (e: any) {
+      toast.error(e?.message ?? "Unable to update shift details.");
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const handleAddNote = () => {
@@ -691,7 +747,9 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
           </div>
           <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>
-            <Button size="sm" className="bg-primary text-primary-foreground" onClick={() => setEditOpen(false)}>Save</Button>
+            <Button size="sm" className="bg-primary text-primary-foreground" onClick={handleSaveEdit} disabled={savingEdit}>
+              {savingEdit ? "Saving..." : "Save"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
