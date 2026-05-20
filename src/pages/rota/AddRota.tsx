@@ -392,9 +392,9 @@ const AddRota = () => {
             status: staffId ? "Confirmed" : "Pending",
             entry_code: form.entryCode.trim() || null,
             entry_code_updated_at: form.entryCode.trim() ? new Date().toISOString() : null,
-            alarm_code: form.alarmCode.trim() || null,
+            alarm_code: form.alarmEnabled ? (form.alarmCode.trim() || null) : null,
             entry_instructions: form.entryInstructions.trim() || null,
-            alarm_instructions: form.alarmInstructions.trim() || null,
+            alarm_instructions: form.alarmEnabled ? (form.alarmInstructions.trim() || null) : null,
           } as any)
           .select("id")
           .single();
