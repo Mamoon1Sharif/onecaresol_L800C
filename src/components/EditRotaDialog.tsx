@@ -36,6 +36,8 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { useCareReceivers } from "@/hooks/use-care-data";
 
 export interface EditRotaShift {
   id: string;
@@ -142,6 +144,25 @@ function statusTone(status: string) {
 
 export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = false }: Props) {
   const [active, setActive] = useState<Tab>("edit");
+  const navigate = useNavigate();
+  const { data: receivers = [] } = useCareReceivers();
+
+  const visibleTabs = readOnly
+    ? TABS.filter((t) => !["manual-in", "manual-out", "shadows", "locks"].includes(t.id))
+    : TABS;
+
+  const goToServiceMember = () => {
+    if (!shift) return;
+    const clientName = (shift.client || "").trim().toLowerCase();
+    const match = receivers.find((r) => (r.name || "").trim().toLowerCase() === clientName);
+    if (match) {
+      onOpenChange(false);
+      navigate(`/carereceivers/${match.id}`);
+    } else {
+      onOpenChange(false);
+      navigate(`/carereceivers`);
+    }
+  };
 
   // form state
   const [service, setService] = useState("WCC - Lunch Call (Z4-T3)");
@@ -257,7 +278,13 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                       <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
                       <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
                       <td className="px-2 py-2 border-r border-border whitespace-nowrap">
-                        <span className="text-primary underline cursor-pointer">{shift.client} - W...</span>
+                        <button
+                          type="button"
+                          onClick={goToServiceMember}
+                          className="text-primary underline hover:text-primary/80 cursor-pointer bg-transparent p-0"
+                        >
+                          {shift.client} - W...
+                        </button>
                       </td>
                       <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.start)}</td>
                       <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.end)}</td>
@@ -331,13 +358,19 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
               {/* Side tabs */}
               <div className="col-span-12 md:col-span-3 border-r border-border bg-muted/20">
                 <div className="py-2">
-                  {TABS.map((t) => {
+                  {visibleTabs.map((t) => {
                     const Icon = t.icon;
                     const isActive = active === t.id;
                     return (
                       <button
                         key={t.id}
-                        onClick={() => setActive(t.id)}
+                        onClick={() => {
+                          if (t.id === "service-user") {
+                            goToServiceMember();
+                            return;
+                          }
+                          setActive(t.id);
+                        }}
                         className={cn(
                           "w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-left transition-colors border-l-2",
                           isActive
@@ -361,7 +394,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     <h3 className="text-base font-semibold text-foreground mb-5 text-center">Edit Rota Details</h3>
                     <div className={cn("space-y-3.5", readOnly && "pointer-events-none opacity-70 select-none")}>
                       <FormRow label="Service" required>
-                        <Select value={service} onValueChange={setService}>
+                        <Select value={service} onValueChange={setService} disabled={readOnly}>
                           <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
@@ -392,7 +425,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                       </FormRow>
 
                       <FormRow label="Rota Type" required>
-                        <Select value={rotaType} onValueChange={setRotaType}>
+                        <Select value={rotaType} onValueChange={setRotaType} disabled={readOnly}>
                           <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
@@ -416,7 +449,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
 
                       <FormRow label="Start" required>
                         <div className="flex items-center gap-2">
-                          <Select value={startH} onValueChange={setStartH}>
+                          <Select value={startH} onValueChange={setStartH} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -429,7 +462,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                             </SelectContent>
                           </Select>
                           <span className="text-foreground font-semibold">:</span>
-                          <Select value={startM} onValueChange={setStartM}>
+                          <Select value={startM} onValueChange={setStartM} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -446,7 +479,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
 
                       <FormRow label="End" required>
                         <div className="flex items-center gap-2">
-                          <Select value={endH} onValueChange={setEndH}>
+                          <Select value={endH} onValueChange={setEndH} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -459,7 +492,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                             </SelectContent>
                           </Select>
                           <span className="text-foreground font-semibold">:</span>
-                          <Select value={endM} onValueChange={setEndM}>
+                          <Select value={endM} onValueChange={setEndM} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -487,7 +520,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                       </FormRow>
 
                       <FormRow label="Tasks">
-                        <Select value={tasks} onValueChange={setTasks}>
+                        <Select value={tasks} onValueChange={setTasks} disabled={readOnly}>
                           <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
