@@ -1,0 +1,1 @@
+ALTER TABLE public.shift_task_medician ADD COLUMN IF NOT EXISTS notes text;
