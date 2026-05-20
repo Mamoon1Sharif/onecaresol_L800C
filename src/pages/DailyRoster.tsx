@@ -254,8 +254,8 @@ const DailyRoster = () => {
         receiver_id: null,
         rawDate: a.dateIso,
         rawVisit: null,
-        receiver: { name: a.client.split(" - ")[0] },
-        caregiver: { name: a.staff },
+        receiver: (careReceivers as any[]).find((c) => c.name === a.client.split(" - ")[0]) ?? { name: a.client.split(" - ")[0] },
+        caregiver: (careGivers as any[]).find((c) => c.name === a.staff) ?? { name: a.staff },
       } as any;
     });
 
