@@ -571,13 +571,12 @@ export function useVisitMedicationNotes(visit: any) {
         .from("medications")
         .select("id, medication, dosage, notes, time_of_day, scheduled_time, date, administered_by")
         .eq("care_receiver_id", visit.care_receiver_id)
-        .not("notes", "is", null)
         .order("date", { ascending: false })
-        .limit(30);
+        .limit(50);
       if (visit?.visit_date) q = q.eq("date", visit.visit_date);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []).filter((m: any) => m.notes && String(m.notes).trim());
+      return data ?? [];
     },
   });
 }
