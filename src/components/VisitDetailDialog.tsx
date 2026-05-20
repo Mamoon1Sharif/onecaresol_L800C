@@ -277,6 +277,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleAddNote = () => {
+    if (guardImmutable()) return;
     if (!noteText.trim()) return;
     setNotes((n) => [
       ...n,
@@ -288,6 +289,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleAddLock = () => {
+    if (guardImmutable()) return;
     if (!lockReason.trim()) return;
     setLocks((l) => [
       ...l,
@@ -298,6 +300,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleClockIn = () => {
+    if (guardImmutable()) return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
@@ -330,6 +333,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleClockOut = async () => {
+    if (guardImmutable()) return;
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     const checkOutIso = now.toISOString();
