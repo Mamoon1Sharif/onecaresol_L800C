@@ -46,7 +46,7 @@ import {
 /*  Data                                                                       */
 /* -------------------------------------------------------------------------- */
 
-type ShiftStatus = "scheduled" | "complete" | "in-progress" | "missed" | "oncall";
+type ShiftStatus = "scheduled" | "due" | "complete" | "in-progress" | "missed" | "oncall";
 
 interface Shift {
   id: string;
@@ -155,6 +155,8 @@ function statusStyles(s: ShiftStatus) {
       return "bg-cyan-200/90 border-cyan-400 text-cyan-900";
     case "scheduled":
       return "bg-blue-200/90 border-blue-400 text-blue-900";
+    case "due":
+      return "bg-blue-200/90 border-blue-400 text-blue-900";
     case "missed":
       return "bg-rose-200/90 border-rose-400 text-rose-900";
     case "oncall":
@@ -173,6 +175,7 @@ function statusLabel(s: ShiftStatus): string {
     case "complete": return "Complete";
     case "in-progress": return "In Progress";
     case "scheduled": return "Scheduled";
+    case "due": return "Due";
     case "missed": return "Missed";
     case "oncall": return "On Call";
   }
@@ -325,7 +328,7 @@ export default function AdvancedRota() {
         client: a.client,
         ref: a.ref,
         service: a.serviceCall || "Visit",
-        status: "scheduled",
+        status: "due",
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];

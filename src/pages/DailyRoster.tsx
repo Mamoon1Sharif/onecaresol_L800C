@@ -221,7 +221,7 @@ const DailyRoster = () => {
         id: `assigned-${a.ref}`,
         ref: a.ref,
         date: getDateShort(dayOffset),
-        status: "Allocated",
+        status: "Due",
         isFuture: true,
         accepted: true,
         serviceUser: a.client,
