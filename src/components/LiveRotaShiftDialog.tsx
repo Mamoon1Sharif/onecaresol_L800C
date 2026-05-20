@@ -1237,12 +1237,14 @@ function StaffAvailabilitySection({
   currentStaffName,
   shiftDate,
   shiftRef,
+  disabled = false,
   onAssign,
 }: {
   caregivers: any[];
   currentStaffName: string;
   shiftDate: string;
   shiftRef?: string;
+  disabled?: boolean;
   onAssign?: (name: string) => void;
 }) {
   const list: StaffRow[] = (caregivers ?? []).slice(0, 12).map((cg, i) => ({
@@ -1344,9 +1346,12 @@ function StaffAvailabilitySection({
               return (
                 <Button
                   size="sm"
-                  disabled={!selected}
+                  disabled={disabled || !selected}
                   className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground disabled:opacity-50"
-                  onClick={() => selected && setConfirmAssign(true)}
+                  onClick={() => {
+                    if (disabled) return;
+                    if (selected) setConfirmAssign(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Assign this Shift
                 </Button>
