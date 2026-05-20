@@ -542,6 +542,46 @@ export function useShiftTasks(dailyVisitId: string | undefined) {
   });
 }
 
+// ── Care management task notes (outcome / description) for a visit's receiver ──
+export function useVisitCareTaskNotes(visit: any) {
+  return useQuery({
+    queryKey: ["visit_care_task_notes", visit?.care_receiver_id, visit?.visit_date],
+    enabled: !!visit?.care_receiver_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("care_management_tasks")
+        .select("id, title, description, outcome, status, updated_at")
+        .eq("care_receiver_id", visit.care_receiver_id)
+        .or("outcome.not.is.null,description.not.is.null")
+        .order("updated_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data ?? []).filter((t: any) => (t.outcome && t.outcome.trim()) || (t.description && t.description.trim()));
+    },
+  });
+}
+
+// ── Medication notes for a visit's receiver on the visit date ──
+export function useVisitMedicationNotes(visit: any) {
+  return useQuery({
+    queryKey: ["visit_medication_notes", visit?.care_receiver_id, visit?.visit_date],
+    enabled: !!visit?.care_receiver_id,
+    queryFn: async () => {
+      let q = supabase
+        .from("medications")
+        .select("id, medication, dosage, notes, time_of_day, scheduled_time, date, administered_by")
+        .eq("care_receiver_id", visit.care_receiver_id)
+        .not("notes", "is", null)
+        .order("date", { ascending: false })
+        .limit(30);
+      if (visit?.visit_date) q = q.eq("date", visit.visit_date);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []).filter((m: any) => m.notes && String(m.notes).trim());
+    },
+  });
+}
+
 export function useAddShiftTask() {
   const qc = useQueryClient();
   return useMutation({
