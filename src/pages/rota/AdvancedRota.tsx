@@ -182,12 +182,19 @@ export default function AdvancedRota() {
   const navigate = useNavigate();
   const { data: careGivers = [] } = useCareGivers();
   const { data: careReceivers = [] } = useCareReceivers();
+  const updateDailyVisit = useUpdateDailyVisit();
 
   const UNASSIGNED = "Unassigned Shifts";
   const staffRows = useMemo(
     () => careGivers.map((cg: any) => cg.name || "Unnamed Caregiver"),
     [careGivers]
   );
+
+  const cgIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const cg of careGivers as any[]) m.set((cg.name || "").toLowerCase(), cg.id);
+    return m;
+  }, [careGivers]);
 
   const [date, setDate] = useState(() => startOfWeekMonday(new Date()));
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('weekly');
