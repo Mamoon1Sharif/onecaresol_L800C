@@ -358,7 +358,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
               {/* Side tabs */}
               <div className="col-span-12 md:col-span-3 border-r border-border bg-muted/20">
                 <div className="py-2">
-                  {TABS.map((t) => {
+                  {visibleTabs.map((t) => {
                     const Icon = t.icon;
                     const isActive = active === t.id;
                     return (
