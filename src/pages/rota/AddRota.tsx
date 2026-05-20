@@ -1042,17 +1042,41 @@ const AddRota = () => {
                   />
                   <p className="text-[10px] text-muted-foreground">Last updated will be stamped on save.</p>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold flex items-center gap-1.5">
-                    <Bell className="h-3.5 w-3.5 text-primary" /> Alarm Code
-                  </Label>
-                  <Input
-                    value={form.alarmCode}
-                    onChange={(e) => setForm({ ...form, alarmCode: e.target.value.slice(0, 32) })}
-                    placeholder="e.g. 1944#"
-                    maxLength={32}
-                    className="h-9 text-sm"
-                  />
+                <div className="space-y-1.5 sm:col-span-2 rounded-md border border-border bg-muted/30 p-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] font-semibold flex items-center gap-1.5 cursor-pointer">
+                      <Bell className="h-3.5 w-3.5 text-primary" /> Alarm
+                    </Label>
+                    <Switch
+                      checked={form.alarmEnabled}
+                      onCheckedChange={(v) => setForm({ ...form, alarmEnabled: v })}
+                    />
+                  </div>
+                  {form.alarmEnabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <div className="space-y-1.5">
+                        <Label className="text-[11px] font-semibold">Alarm Code</Label>
+                        <Input
+                          value={form.alarmCode}
+                          onChange={(e) => setForm({ ...form, alarmCode: e.target.value.slice(0, 32) })}
+                          placeholder="e.g. 1944#"
+                          maxLength={32}
+                          className="h-9 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <Label className="text-[11px] font-semibold">Alarm Instructions</Label>
+                        <Textarea
+                          value={form.alarmInstructions}
+                          onChange={(e) => setForm({ ...form, alarmInstructions: e.target.value.slice(0, 500) })}
+                          placeholder="e.g. Wait for beep before entering."
+                          maxLength={500}
+                          rows={2}
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-[11px] font-semibold">Entry Instructions</Label>
@@ -1062,17 +1086,6 @@ const AddRota = () => {
                     placeholder="e.g. Side gate is usually unlocked. Key safe behind blue planter."
                     maxLength={1000}
                     rows={3}
-                    className="text-sm"
-                  />
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-[11px] font-semibold">Alarm Instructions</Label>
-                  <Textarea
-                    value={form.alarmInstructions}
-                    onChange={(e) => setForm({ ...form, alarmInstructions: e.target.value.slice(0, 500) })}
-                    placeholder="e.g. Wait for beep before entering."
-                    maxLength={500}
-                    rows={2}
                     className="text-sm"
                   />
                 </div>
