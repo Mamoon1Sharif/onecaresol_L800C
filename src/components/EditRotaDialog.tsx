@@ -394,7 +394,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     <h3 className="text-base font-semibold text-foreground mb-5 text-center">Edit Rota Details</h3>
                     <div className={cn("space-y-3.5", readOnly && "pointer-events-none opacity-70 select-none")}>
                       <FormRow label="Service" required>
-                        <Select value={service} onValueChange={setService}>
+                        <Select value={service} onValueChange={setService} disabled={readOnly}>
                           <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
@@ -425,7 +425,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                       </FormRow>
 
                       <FormRow label="Rota Type" required>
-                        <Select value={rotaType} onValueChange={setRotaType}>
+                        <Select value={rotaType} onValueChange={setRotaType} disabled={readOnly}>
                           <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
@@ -449,7 +449,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
 
                       <FormRow label="Start" required>
                         <div className="flex items-center gap-2">
-                          <Select value={startH} onValueChange={setStartH}>
+                          <Select value={startH} onValueChange={setStartH} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -462,7 +462,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                             </SelectContent>
                           </Select>
                           <span className="text-foreground font-semibold">:</span>
-                          <Select value={startM} onValueChange={setStartM}>
+                          <Select value={startM} onValueChange={setStartM} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -479,7 +479,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
 
                       <FormRow label="End" required>
                         <div className="flex items-center gap-2">
-                          <Select value={endH} onValueChange={setEndH}>
+                          <Select value={endH} onValueChange={setEndH} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -492,7 +492,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                             </SelectContent>
                           </Select>
                           <span className="text-foreground font-semibold">:</span>
-                          <Select value={endM} onValueChange={setEndM}>
+                          <Select value={endM} onValueChange={setEndM} disabled={readOnly}>
                             <SelectTrigger className="h-9 text-xs w-20">
                               <SelectValue />
                             </SelectTrigger>
@@ -520,7 +520,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                       </FormRow>
 
                       <FormRow label="Tasks">
-                        <Select value={tasks} onValueChange={setTasks}>
+                        <Select value={tasks} onValueChange={setTasks} disabled={readOnly}>
                           <SelectTrigger className="h-9 text-xs">
                             <SelectValue />
                           </SelectTrigger>
