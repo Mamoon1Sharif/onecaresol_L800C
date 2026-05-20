@@ -874,6 +874,56 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={confirmRemoveCaregiverOpen} onOpenChange={setConfirmRemoveCaregiverOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove care giver?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove <span className="font-medium text-foreground">{visit.teamMember}</span> from rota {visit.ref}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              onClick={() => {
+                setMemberRemoved(true);
+                setConfirmRemoveCaregiverOpen(false);
+                toast.success("Care giver removed");
+              }}
+            >
+              Remove care giver
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!pendingCriticalAction}
+        onOpenChange={(open) => {
+          if (!open) setPendingCriticalAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={pendingCriticalAction?.destructive ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : undefined}
+              onClick={async () => {
+                await pendingCriticalAction?.onConfirm();
+                setPendingCriticalAction(null);
+              }}
+            >
+              {pendingCriticalAction?.actionLabel ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* ============== ADD SHADOW SHIFT DIALOG ============== */}
       <Dialog open={shadowOpen} onOpenChange={setShadowOpen}>
         <DialogContent className="max-w-md">
