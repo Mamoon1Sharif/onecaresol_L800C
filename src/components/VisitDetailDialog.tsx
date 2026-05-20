@@ -443,7 +443,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                             );
                           })()}
                           <td className="p-1.5 border-r border-border">
-                            <a className="text-primary hover:underline cursor-pointer text-[11px]">{visit.teamMember}</a>
+                            {visit.caregiver?.id || visit.caregiver_id ? (
+                              <Link to={`/caregivers/${visit.caregiver?.id || visit.caregiver_id}`} onClick={() => onOpenChange(false)} className="text-primary hover:underline cursor-pointer text-[11px]">{visit.teamMember}</Link>
+                            ) : (
+                              <span className="text-[11px]">{visit.teamMember}</span>
+                            )}
                           </td>
                           <td className="p-1.5 border-r border-border text-[11px]">{visit.week ?? "Week 1"}</td>
                           <td className="p-1.5 text-center"><Lock className="h-3 w-3 text-muted-foreground mx-auto" /></td>
