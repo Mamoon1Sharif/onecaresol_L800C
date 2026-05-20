@@ -234,6 +234,13 @@ export default function AdvancedRota() {
   const gridRef = useRef<HTMLDivElement>(null);
   const unassignedPanelRef = useRef<HTMLDivElement>(null);
 
+  // Live "now" tick for the daily timeline indicator (updates every 30s)
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const dateLabel = useMemo(() => {
     if (viewMode === 'daily') return formatDateShort(date);
     const weekEnd = addDays(date, 6);
