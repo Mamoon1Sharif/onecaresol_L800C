@@ -337,7 +337,11 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
                           <span className="text-[10px] text-muted-foreground">· {m.scheduled_time}</span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>
+                      {m.notes ? (
+                        <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic mt-0.5">No notes</p>
+                      )}
                       {m.administered_by && (
                         <p className="text-[10px] text-muted-foreground mt-0.5">by {m.administered_by}</p>
                       )}
