@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUpdateDailyVisit } from "@/hooks/use-care-data";
@@ -416,7 +417,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                           <td className="p-1.5 border-r border-border text-center"><span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" /></td>
                           <td className="p-1.5 border-r border-border text-center text-muted-foreground/40 text-[11px]">—</td>
                           <td className="p-1.5 border-r border-border">
-                            <a className="text-primary hover:underline cursor-pointer text-[11px]">{visit.serviceUser}</a>
+                            {visit.receiver?.id || visit.receiver_id ? (
+                              <Link to={`/carereceivers/${visit.receiver?.id || visit.receiver_id}`} onClick={() => onOpenChange(false)} className="text-primary hover:underline cursor-pointer text-[11px]">{visit.serviceUser}</Link>
+                            ) : (
+                              <span className="text-[11px]">{visit.serviceUser}</span>
+                            )}
                           </td>
                           <td className="p-1.5 border-r border-border text-center font-mono text-[11px] bg-emerald-50">{editStart || visit.scheduledStart}</td>
                           <td className="p-1.5 border-r border-border text-center font-mono text-[11px] bg-rose-50">{editEnd || visit.scheduledEnd}</td>
@@ -438,7 +443,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                             );
                           })()}
                           <td className="p-1.5 border-r border-border">
-                            <a className="text-primary hover:underline cursor-pointer text-[11px]">{visit.teamMember}</a>
+                            {visit.caregiver?.id || visit.caregiver_id ? (
+                              <Link to={`/caregivers/${visit.caregiver?.id || visit.caregiver_id}`} onClick={() => onOpenChange(false)} className="text-primary hover:underline cursor-pointer text-[11px]">{visit.teamMember}</Link>
+                            ) : (
+                              <span className="text-[11px]">{visit.teamMember}</span>
+                            )}
                           </td>
                           <td className="p-1.5 border-r border-border text-[11px]">{visit.week ?? "Week 1"}</td>
                           <td className="p-1.5 text-center"><Lock className="h-3 w-3 text-muted-foreground mx-auto" /></td>
@@ -558,7 +567,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                       </Button>
                     </div>
                     <div className="flex-1 min-w-[240px]">
-                      <a className="text-primary hover:underline font-medium text-sm cursor-pointer">{visit.teamMember}</a>
+                      {visit.caregiver?.id || visit.caregiver_id ? (
+                        <Link to={`/caregivers/${visit.caregiver?.id || visit.caregiver_id}`} onClick={() => onOpenChange(false)} className="text-primary hover:underline font-medium text-sm cursor-pointer">{visit.teamMember}</Link>
+                      ) : (
+                        <span className="font-medium text-sm">{visit.teamMember}</span>
+                      )}
                       {(editStatus || visit.status || "").toLowerCase() === "missed" && (
                         <div className="mt-3 text-xs text-destructive font-medium">Shift was missed — caregiver did not attend.</div>
                       )}
