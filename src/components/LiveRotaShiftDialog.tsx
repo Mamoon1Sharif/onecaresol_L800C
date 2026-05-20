@@ -203,6 +203,12 @@ export function LiveRotaShiftDialog({
           </DialogHeader>
 
           <div className="p-4 space-y-4">
+            {isImmutable && (
+              <div className="rounded-sm border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-medium text-amber-900">
+                This shift is already in progress or completed, so critical changes are locked.
+              </div>
+            )}
+
             {/* Live Rota Shift(s) section */}
             <section className="border border-border rounded-sm overflow-hidden">
               <div className="border-t-2 border-t-primary/70 flex items-center justify-between px-3 py-2 bg-card">
@@ -310,6 +316,7 @@ export function LiveRotaShiftDialog({
                         <button
                           type="button"
                           onClick={() => {
+                            if (guardImmutable()) return;
                             const el = document.getElementById("staff-availability-section");
                             if (el) {
                               el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -317,7 +324,8 @@ export function LiveRotaShiftDialog({
                               setTimeout(() => el.classList.remove("ring-2", "ring-primary"), 1600);
                             }
                           }}
-                          className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors"
+                          className="w-full border-2 border-dashed border-border rounded-sm py-10 flex flex-col items-center justify-center text-muted-foreground hover:bg-muted/40 hover:border-primary/50 transition-colors disabled:pointer-events-none disabled:opacity-50"
+                          disabled={isImmutable}
                         >
                           <span className="text-base font-medium">Add Care Giver/s</span>
                           <span className="text-xs mt-1">Assign a Care Giver to this shift</span>
@@ -351,9 +359,6 @@ export function LiveRotaShiftDialog({
                         <div className="flex-1">
                           <div className="text-primary font-medium mb-2">{current.staff}</div>
                           <div className="space-y-1 text-sm">
-                            <button onClick={() => setClockEdit("in")} className="text-success hover:underline block">
-                              - Clock In
-                            </button>
                             <button
                               onClick={() => {
                                 if (guardImmutable()) return;
