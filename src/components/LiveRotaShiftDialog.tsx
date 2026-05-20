@@ -70,6 +70,13 @@ export function LiveRotaShiftDialog({
   const [showNotePrompt, setShowNotePrompt] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [newNoteVisible, setNewNoteVisible] = useState("Yes");
+  const [pendingCriticalAction, setPendingCriticalAction] = useState<null | {
+    title: string;
+    description: string;
+    actionLabel: string;
+    destructive?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>(null);
   const [shiftBulk, setShiftBulk] = useState("bulk");
   const [shiftSearch, setShiftSearch] = useState("");
   const [shiftRowChecked, setShiftRowChecked] = useState(false);
@@ -83,6 +90,31 @@ export function LiveRotaShiftDialog({
     setRemoved(false);
   }
   if (!shift || !current) return null;
+
+  const { data: liveVisitState } = useQuery({
+    queryKey: ["live-rota-visit-state", current.visitId],
+    enabled: !!current.visitId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_visits")
+        .select("status, check_in_time, check_out_time")
+        .eq("id", current.visitId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const liveStatus = (liveVisitState?.status || "").toLowerCase();
+  const isImmutable = Boolean(
+    liveVisitState?.check_in_time || liveVisitState?.check_out_time || ["in progress", "completed", "complete", "finished"].includes(liveStatus),
+  );
+  const immutableReason = "This shift is already in progress or completed, so it can't be changed.";
+  const guardImmutable = () => {
+    if (!isImmutable) return false;
+    toast.error(immutableReason);
+    return true;
+  };
 
   const matchesShiftSearch = (val: string) =>
     !shiftSearch || val.toLowerCase().includes(shiftSearch.toLowerCase());
@@ -132,6 +164,7 @@ export function LiveRotaShiftDialog({
   });
 
   const runShiftBulk = () => {
+    if (guardImmutable()) return;
     if (shiftBulk === "bulk") {
       toast.info("Select a bulk action first");
       return;
@@ -146,6 +179,7 @@ export function LiveRotaShiftDialog({
   };
 
   const runMedAction = () => {
+    if (guardImmutable()) return;
     const selected = Object.entries(medChecked).filter(([, v]) => v).map(([k]) => k);
     if (medFilter === "all" && selected.length === 0) {
       toast.error("Select medications or pick an action");
