@@ -19,6 +19,16 @@ import {
   LogIn, LogOut, PlayCircle, CircleDot, Pill, MessageSquare, StickyNote
 } from "lucide-react";
 import { useShiftNotes, useCaregiverPrivateNotes, useVisitNotesByShift, useCareGivers } from "@/hooks/use-care-data";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface VisitRow {
   id: string;
@@ -84,6 +94,14 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   const [lockOpen, setLockOpen] = useState(false);
   const [shadowOpen, setShadowOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmRemoveCaregiverOpen, setConfirmRemoveCaregiverOpen] = useState(false);
+  const [pendingCriticalAction, setPendingCriticalAction] = useState<null | {
+    title: string;
+    description: string;
+    actionLabel: string;
+    destructive?: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>(null);
 
   // Editable shift fields (local)
   const [editStatus, setEditStatus] = useState<string>(visit?.status ?? "");
@@ -181,6 +199,17 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
 
   if (!visit) return null;
 
+  const effectiveStatus = (editStatus || visit.status || "").toLowerCase();
+  const isImmutable = Boolean(
+    visit.rawVisit?.check_in_time || visit.rawVisit?.check_out_time || ["in progress", "completed", "complete", "finished"].includes(effectiveStatus),
+  );
+  const immutableReason = "This rota is already in progress or completed, so it can't be changed.";
+  const guardImmutable = () => {
+    if (!isImmutable) return false;
+    toast.error(immutableReason);
+    return true;
+  };
+
   const built = `${visit.ref} at ${new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} on ${visit.date}`;
 
   const syncVisitCache = (updates: Record<string, any>) => {
@@ -203,6 +232,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   };
 
   const handleSaveEdit = async () => {
+    if (guardImmutable()) return;
     if (!visit) return;
     const start = parseTime(editStart || visit.scheduledStart);
     const end = parseTime(editEnd || visit.scheduledEnd);
