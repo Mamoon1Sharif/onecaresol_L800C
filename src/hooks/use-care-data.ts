@@ -377,7 +377,7 @@ export function useDailyVisitsRange(fromDate?: string, toDate?: string) {
 export function useUpdateDailyVisit() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (updates: { id: string; care_giver_id?: string | null; start_hour?: number; duration?: number; status?: string; check_in_time?: string | null; check_out_time?: string | null }) => {
+    mutationFn: async (updates: { id: string; care_giver_id?: string | null; start_hour?: number; start_minute?: number; duration?: number; duration_minutes?: number; status?: string; check_in_time?: string | null; check_out_time?: string | null }) => {
       const { id, ...rest } = updates;
       const { error } = await supabase.from("daily_visits").update(rest as any).eq("id", id);
       if (error) throw error;
