@@ -85,6 +85,8 @@ type Tab =
   | "service-user"
   | "manual-in"
   | "manual-out"
+  | "tasks"
+  | "medication"
   | "shadows"
   | "locks";
 
@@ -93,6 +95,8 @@ const TABS: { id: Tab; label: string; icon: typeof Pencil }[] = [
   { id: "service-user", label: "Go to Service Members Profile", icon: UserCog },
   { id: "manual-in", label: "Manual Clock In", icon: LogIn },
   { id: "manual-out", label: "Manual Clock Out", icon: LogOut },
+  { id: "tasks", label: "Tasks", icon: CheckSquare },
+  { id: "medication", label: "Medication", icon: Pill },
   { id: "shadows", label: "Shadows", icon: Users },
   { id: "locks", label: "Locks", icon: Lock },
 ];
@@ -570,6 +574,12 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     }}
                   />
                 )}
+
+                {active === "tasks" && <LiveTasksPanel visitId={shift.id} />}
+
+                {active === "medication" && <LiveMedicationPanel visitId={shift.id} />}
+
+
 
                 {active === "shadows" && (
                   <PlaceholderPanel
@@ -1176,4 +1186,196 @@ function seedMeds(shift: EditRotaShift, slot: string): MedRow[] {
 
 function pickFromList<T>(seed: number, arr: T[]): T {
   return arr[Math.abs(seed) % arr.length];
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Live Tasks Panel — fetches shift_task_medician for this visit (realtime)   */
+/* -------------------------------------------------------------------------- */
+
+function LiveTasksPanel({ visitId }: { visitId: string }) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(visitId);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isUuid) { setLoading(false); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("shift_task_medician" as any)
+        .select("id,title,is_completed,completed_by,completed_at,notes,medication_id,medication")
+        .eq("daily_visit_id", visitId)
+        .is("medication_id", null)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      if (error) toast.error("Failed to load tasks");
+      setRows((data || []).filter((r: any) => !r.medication));
+      setLoading(false);
+    };
+    load();
+    let channel: any;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      channel = supabase
+        .channel(`tasks-${visitId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "shift_task_medician", filter: `daily_visit_id=eq.${visitId}` }, load)
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      (async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        if (channel) supabase.removeChannel(channel);
+      })();
+    };
+  }, [visitId, isUuid]);
+
+  const toggle = async (row: any) => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const next = !row.is_completed;
+    const { error } = await supabase
+      .from("shift_task_medician" as any)
+      .update({ is_completed: next, completed_at: next ? new Date().toISOString() : null })
+      .eq("id", row.id);
+    if (error) toast.error("Update failed");
+  };
+
+  if (!isUuid) {
+    return <div className="max-w-md mx-auto py-8 text-center text-xs text-muted-foreground">Tasks are available once this shift is saved to the database.</div>;
+  }
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Tasks</h3>
+      {loading ? (
+        <p className="text-xs text-muted-foreground text-center py-3">Loading tasks…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-3">No tasks assigned to this shift.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((t) => (
+            <div key={t.id} className="flex items-start gap-3 p-3 rounded border border-border bg-card">
+              <input
+                type="checkbox"
+                checked={!!t.is_completed}
+                onChange={() => toggle(t)}
+                className="h-4 w-4 mt-0.5 rounded border-border accent-primary cursor-pointer"
+              />
+              <div className="flex-1 min-w-0">
+                <div className={cn("text-xs font-medium", t.is_completed && "line-through text-muted-foreground")}>
+                  {t.title}
+                </div>
+                {t.notes && <div className="text-[11px] text-muted-foreground mt-0.5">{t.notes}</div>}
+                {t.is_completed && t.completed_at && (
+                  <div className="text-[10px] text-success mt-1">
+                    Completed {t.completed_by ? `by ${t.completed_by} ` : ""}{new Date(t.completed_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Live Medication Panel — fetches shift_task_medician (meds) for this visit  */
+/* -------------------------------------------------------------------------- */
+
+function LiveMedicationPanel({ visitId }: { visitId: string }) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(visitId);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isUuid) { setLoading(false); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("shift_task_medician" as any)
+        .select("id,title,medication,dosage,is_completed,completed_by,completed_at,notes,medication_id")
+        .eq("daily_visit_id", visitId)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      if (error) toast.error("Failed to load medications");
+      setRows((data || []).filter((r: any) => r.medication_id || r.medication));
+      setLoading(false);
+    };
+    load();
+    let channel: any;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      channel = supabase
+        .channel(`meds-${visitId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "shift_task_medician", filter: `daily_visit_id=eq.${visitId}` }, load)
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      (async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        if (channel) supabase.removeChannel(channel);
+      })();
+    };
+  }, [visitId, isUuid]);
+
+  const toggle = async (row: any) => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const next = !row.is_completed;
+    const { error } = await supabase
+      .from("shift_task_medician" as any)
+      .update({ is_completed: next, completed_at: next ? new Date().toISOString() : null })
+      .eq("id", row.id);
+    if (error) toast.error("Update failed");
+  };
+
+  if (!isUuid) {
+    return <div className="max-w-md mx-auto py-8 text-center text-xs text-muted-foreground">Medication is available once this shift is saved to the database.</div>;
+  }
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Medication</h3>
+      {loading ? (
+        <p className="text-xs text-muted-foreground text-center py-3">Loading medication…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-3">No medication scheduled for this shift.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((m) => (
+            <div key={m.id} className="flex items-start gap-3 p-3 rounded border border-border bg-card">
+              <input
+                type="checkbox"
+                checked={!!m.is_completed}
+                onChange={() => toggle(m)}
+                className="h-4 w-4 mt-0.5 rounded border-border accent-primary cursor-pointer"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn("text-xs font-semibold", m.is_completed && "line-through text-muted-foreground")}>
+                    {m.medication || m.title}
+                  </span>
+                  {m.dosage && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                      {m.dosage}
+                    </span>
+                  )}
+                </div>
+                {m.notes && <div className="text-[11px] text-muted-foreground mt-0.5">{m.notes}</div>}
+                {m.is_completed && m.completed_at && (
+                  <div className="text-[10px] text-success mt-1">
+                    Administered {m.completed_by ? `by ${m.completed_by} ` : ""}{new Date(m.completed_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
