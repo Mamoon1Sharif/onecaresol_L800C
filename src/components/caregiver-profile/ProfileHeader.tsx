@@ -16,6 +16,10 @@ import { TagsDialog } from "@/components/receiver-profile/TagsDialog";
 import { getTagDef } from "@/lib/receiver-tags";
 import { cn } from "@/lib/utils";
 import { CAREGIVER_STATUS_OPTIONS } from "@/lib/profile-options";
+import {
+  useCaregiverHolidayEntries,
+  caregiverUnavailableReason,
+} from "@/hooks/use-caregiver-availability";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CareGiver = Tables<"care_givers">;
