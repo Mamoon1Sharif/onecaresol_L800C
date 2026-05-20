@@ -23,7 +23,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
+import { useCareGivers, useCareReceivers, useDailyVisitsRange, useUpdateDailyVisit } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
 import { getAssignedShifts, subscribeAssignedShifts, timeToHours, saveAssignedShift, removeAssignedShift, isShiftAssigned } from "@/lib/assigned-shifts";
 import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
