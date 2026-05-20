@@ -23,7 +23,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
+import { useCareGivers, useCareReceivers, useDailyVisitsRange, useUpdateDailyVisit } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
 import { getAssignedShifts, subscribeAssignedShifts, timeToHours, saveAssignedShift, removeAssignedShift, isShiftAssigned } from "@/lib/assigned-shifts";
 import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
@@ -182,12 +182,19 @@ export default function AdvancedRota() {
   const navigate = useNavigate();
   const { data: careGivers = [] } = useCareGivers();
   const { data: careReceivers = [] } = useCareReceivers();
+  const updateDailyVisit = useUpdateDailyVisit();
 
   const UNASSIGNED = "Unassigned Shifts";
   const staffRows = useMemo(
     () => careGivers.map((cg: any) => cg.name || "Unnamed Caregiver"),
     [careGivers]
   );
+
+  const cgIdByName = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const cg of careGivers as any[]) m.set((cg.name || "").toLowerCase(), cg.id);
+    return m;
+  }, [careGivers]);
 
   const [date, setDate] = useState(() => startOfWeekMonday(new Date()));
   const [viewMode, setViewMode] = useState<'daily' | 'weekly'>('weekly');
@@ -279,18 +286,31 @@ export default function AdvancedRota() {
 
   // Build shifts from database visits, then apply any user overrides
   const shifts = useMemo<Shift[]>(() => {
+    // Compute dynamic status from current time when DB has no concrete one yet.
+    const applyDynamicStatus = (s: Shift): Shift => {
+      if (s.status === "complete" || s.status === "missed" || s.status === "in-progress") return s;
+      const day = days[s.dayIndex] ?? days[0];
+      if (!day) return s;
+      const base = new Date(day);
+      base.setHours(0, 0, 0, 0);
+      const startMs = base.getTime() + s.start * 3_600_000;
+      const endMs = base.getTime() + s.end * 3_600_000;
+      const t = now.getTime();
+      if (t >= endMs) return { ...s, status: "complete" };
+      if (t >= startMs) return { ...s, status: "in-progress" };
+      return s;
+    };
+
     const allShifts: Shift[] = [];
     (rawVisits as any[]).forEach((v) => {
-      // Determine dayIndex based on visit_date
-      const vDate = v.visit_date; // "YYYY-MM-DD"
+      const vDate = v.visit_date;
       const dayIdx = days.findIndex(d => formatDateISO(d) === vDate);
-      if (dayIdx < 0) return; // outside our visible range
+      if (dayIdx < 0) return;
       const shift = dbVisitToShift(v, dayIdx);
       const ov = overrides[shift.id];
-      allShifts.push(ov ? { ...shift, ...ov } : shift);
+      allShifts.push(applyDynamicStatus(ov ? { ...shift, ...ov } : shift));
     });
 
-    // Inject synthetic shifts assigned from the Conflicts flow
     for (const a of getAssignedShifts()) {
       const dayIdx = days.findIndex((d) => formatDateISO(d) === a.dateIso);
       if (dayIdx < 0) continue;
@@ -309,10 +329,9 @@ export default function AdvancedRota() {
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
-      allShifts.push(ov ? { ...base, ...ov } : base);
+      allShifts.push(applyDynamicStatus(ov ? { ...base, ...ov } : base));
     }
 
-    // Inject unallocated shifts from the Conflicts pool
     const unassignedPool = buildUnassignedShifts(careReceivers as any);
     for (const u of unassignedPool) {
       if (isShiftAssigned(u.ref)) continue;
@@ -331,11 +350,11 @@ export default function AdvancedRota() {
         dayIndex: dayIdx,
       } as Shift;
       const ov = overrides[id];
-      allShifts.push(ov ? { ...base, ...ov } : base);
+      allShifts.push(applyDynamicStatus(ov ? { ...base, ...ov } : base));
     }
 
     return allShifts;
-  }, [rawVisits, days, overrides, assignedTick, careReceivers]);
+  }, [rawVisits, days, overrides, assignedTick, careReceivers, now]);
 
   // Detect per-caregiver overlapping shifts (conflicts).
   const conflicts = useMemo(() => {
@@ -554,6 +573,33 @@ export default function AdvancedRota() {
     };
   }, [drag, hoverGhost, shifts]);
 
+  function persistDbVisitMove(
+    dbId: string,
+    toStaff: string,
+    toStart: number,
+    toEnd: number,
+  ) {
+    const startH = Math.floor(toStart);
+    const startM = Math.round((toStart - startH) * 60);
+    const durationMin = Math.max(1, Math.round((toEnd - toStart) * 60));
+    const newCgId =
+      toStaff === UNASSIGNED ? null : cgIdByName.get(toStaff.toLowerCase()) ?? null;
+    updateDailyVisit.mutate(
+      {
+        id: dbId,
+        care_giver_id: newCgId,
+        start_hour: startH,
+        start_minute: startM,
+        duration_minutes: durationMin,
+      },
+      {
+        onError: (err: any) => {
+          toast.error("Failed to save shift to database", { description: err?.message });
+        },
+      }
+    );
+  }
+
   function confirmPendingMove() {
     if (!pendingMove) return;
 
@@ -567,6 +613,9 @@ export default function AdvancedRota() {
       // Send back to the unassigned pool — drop any persisted assignment.
       if (isAssignedSynthetic || isUnassignedSynthetic) {
         removeAssignedShift(pendingMove.ref);
+      } else {
+        // Real DB-backed shift — clear the caregiver in the DB.
+        persistDbVisitMove(pendingMove.id, UNASSIGNED, pendingMove.toStart, pendingMove.toEnd);
       }
       setOverrides((prev) => {
         const next = { ...prev };
@@ -574,8 +623,7 @@ export default function AdvancedRota() {
         return next;
       });
     } else if (isUnassignedSynthetic || isAssignedSynthetic) {
-      // Persist the assignment so it survives refresh and disappears
-      // from the unassigned panel everywhere.
+      // Synthetic shifts (from the conflicts pool) live in local storage.
       saveAssignedShift({
         ref: pendingMove.ref,
         dateIso,
@@ -585,15 +633,14 @@ export default function AdvancedRota() {
         staff: pendingMove.toStaff,
         serviceCall: pendingMove.service,
       });
-      // Clear any override on the old synthetic id — the shift will now
-      // be rendered as `assigned-<ref>` from the persisted store.
       setOverrides((prev) => {
         const next = { ...prev };
         delete next[pendingMove.id];
         return next;
       });
     } else {
-      // Regular DB-backed shift — keep the local override behaviour.
+      // Real DB-backed shift — persist to database AND keep optimistic override.
+      persistDbVisitMove(pendingMove.id, pendingMove.toStaff, pendingMove.toStart, pendingMove.toEnd);
       setOverrides((prev) => ({
         ...prev,
         [pendingMove.id]: {
@@ -620,6 +667,8 @@ export default function AdvancedRota() {
   }
 
 
+
+
   function handleSaveEdit(updates: {
     service: string;
     startH: number;
@@ -639,7 +688,32 @@ export default function AdvancedRota() {
         service: updates.service,
       },
     }));
+
+    // Persist to DB for real visits; synthetic shifts already live in localStorage.
+    const isSynthetic =
+      editing.id.startsWith("unassigned-") || editing.id.startsWith("assigned-");
+    if (!isSynthetic) {
+      const s = shifts.find((x) => x.id === editing.id);
+      const staff = s?.staff ?? editing.staff;
+      persistDbVisitMove(editing.id, staff, newStart, newEnd);
+    } else {
+      // Update the local-storage synthetic store with new times.
+      const s = shifts.find((x) => x.id === editing.id);
+      if (s) {
+        const day = days[s.dayIndex] ?? days[0];
+        saveAssignedShift({
+          ref: s.ref,
+          dateIso: formatDateISO(day),
+          start: fmtTime(newStart),
+          end: fmtTime(newEnd),
+          client: s.client,
+          staff: s.staff,
+          serviceCall: updates.service,
+        });
+      }
+    }
   }
+
 
   function assignDroppedShift(
     shiftId: string,
