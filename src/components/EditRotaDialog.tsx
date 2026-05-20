@@ -151,7 +151,7 @@ function statusTone(status: string) {
   return "text-foreground";
 }
 
-export function EditRotaDialog({ open, onOpenChange, shift, onSave }: Props) {
+export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = false }: Props) {
   const [active, setActive] = useState<Tab>("edit");
 
   // form state
