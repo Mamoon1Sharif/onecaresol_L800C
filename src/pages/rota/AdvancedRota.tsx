@@ -981,7 +981,7 @@ export default function AdvancedRota() {
                 className="px-2 flex items-center text-[11px] font-semibold uppercase border-b border-border bg-muted text-muted-foreground"
                 style={{ height: viewMode === 'daily' ? HEADER_H : headerHeight + 28 }}
               >
-                Staff / {viewMode === 'daily' ? 'Time' : 'Day'}
+                Care giver / {viewMode === 'daily' ? 'Time' : 'Day'}
               </div>
               {staffRows.map((name) => (
                 <div
