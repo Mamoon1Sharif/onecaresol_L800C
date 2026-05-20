@@ -210,7 +210,11 @@ export function LiveRotaShiftDialog({
                 <Button
                   size="sm"
                   className="h-7 gap-1 bg-warning hover:bg-warning/90 text-warning-foreground"
-                  onClick={() => setAmendOpen(true)}
+                  disabled={isImmutable}
+                  onClick={() => {
+                    if (guardImmutable()) return;
+                    setAmendOpen(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Edit Shift Details
                 </Button>
@@ -334,8 +338,12 @@ export function LiveRotaShiftDialog({
                           </div>
                           <Button
                             size="sm"
+                            disabled={isImmutable}
                             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground h-8 w-[140px]"
-                            onClick={() => setConfirmRemove(true)}
+                            onClick={() => {
+                              if (guardImmutable()) return;
+                              setConfirmRemove(true);
+                            }}
                           >
                             ↑ Remove Care Giver
                           </Button>
@@ -346,7 +354,24 @@ export function LiveRotaShiftDialog({
                             <button onClick={() => setClockEdit("in")} className="text-success hover:underline block">
                               - Clock In
                             </button>
-                            <button onClick={() => setClockEdit("out")} className="text-success hover:underline block">
+                            <button
+                              onClick={() => {
+                                if (guardImmutable()) return;
+                                setClockEdit("in");
+                              }}
+                              className="text-success hover:underline block disabled:pointer-events-none disabled:opacity-50"
+                              disabled={isImmutable}
+                            >
+                              - Clock In
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (guardImmutable()) return;
+                                setClockEdit("out");
+                              }}
+                              className="text-success hover:underline block disabled:pointer-events-none disabled:opacity-50"
+                              disabled={isImmutable}
+                            >
                               - Clock Out
                             </button>
                           </div>
@@ -369,8 +394,13 @@ export function LiveRotaShiftDialog({
                 </h3>
                 <Button
                   size="sm"
+                  disabled={isImmutable}
                   className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground"
-                  onClick={() => { setLockReason(""); setShowLockPrompt(true); }}
+                  onClick={() => {
+                    if (guardImmutable()) return;
+                    setLockReason("");
+                    setShowLockPrompt(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Add Lock
                 </Button>
@@ -398,8 +428,17 @@ export function LiveRotaShiftDialog({
                             <button
                               className="text-destructive hover:underline text-xs"
                               onClick={() => {
-                                setLocks((p) => p.filter((x) => x.id !== l.id));
-                                toast.success("Lock removed");
+                                if (guardImmutable()) return;
+                                setPendingCriticalAction({
+                                  title: "Remove rota lock?",
+                                  description: `This will remove the lock \"${l.reason}\" from shift ${current.ref}.`,
+                                  actionLabel: "Remove lock",
+                                  destructive: true,
+                                  onConfirm: () => {
+                                    setLocks((p) => p.filter((x) => x.id !== l.id));
+                                    toast.success("Lock removed");
+                                  },
+                                });
                               }}
                             >Remove</button>
                           </td>
@@ -417,8 +456,14 @@ export function LiveRotaShiftDialog({
                 <h3 className="text-sm font-semibold text-foreground">Live Rota Notes</h3>
                 <Button
                   size="sm"
+                  disabled={isImmutable}
                   className="h-7 gap-1 bg-success hover:bg-success/90 text-success-foreground"
-                  onClick={() => { setNewNote(""); setNewNoteVisible("Yes"); setShowNotePrompt(true); }}
+                  onClick={() => {
+                    if (guardImmutable()) return;
+                    setNewNote("");
+                    setNewNoteVisible("Yes");
+                    setShowNotePrompt(true);
+                  }}
                 >
                   <Plus className="h-3 w-3" /> Add New
                 </Button>
@@ -449,8 +494,17 @@ export function LiveRotaShiftDialog({
                             <button
                               className="text-destructive hover:underline text-xs"
                               onClick={() => {
-                                setNotes((p) => p.filter((x) => x.ref !== n.ref));
-                                toast.success("Note removed");
+                                if (guardImmutable()) return;
+                                setPendingCriticalAction({
+                                  title: "Delete note?",
+                                  description: `This will permanently delete note ${n.ref} from shift ${current.ref}.`,
+                                  actionLabel: "Delete note",
+                                  destructive: true,
+                                  onConfirm: () => {
+                                    setNotes((p) => p.filter((x) => x.ref !== n.ref));
+                                    toast.success("Note removed");
+                                  },
+                                });
                               }}
                             >Delete</button>
                           </td>
@@ -468,7 +522,9 @@ export function LiveRotaShiftDialog({
               currentStaffName={current.staff}
               shiftDate={current.date}
               shiftRef={current.ref}
+              disabled={isImmutable}
               onAssign={(name) => {
+                if (guardImmutable()) return;
                 setCurrent({ ...current, staff: name });
                 setRemoved(false);
                 saveAssignedShift({
