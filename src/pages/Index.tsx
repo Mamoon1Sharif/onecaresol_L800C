@@ -40,6 +40,8 @@ import {
   useDailyVisits,
   useCaregiverPrivateNotes,
   useVisitNotesByShift,
+  useVisitCareTaskNotes,
+  useVisitMedicationNotes,
 } from "@/hooks/use-care-data";
 import { supabase } from "@/integrations/supabase/client";
 import { ShiftDetailDialog } from "@/components/ShiftDetailDialog";
