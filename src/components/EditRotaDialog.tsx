@@ -1,5 +1,15 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -173,6 +183,12 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
   const [taskCall, setTaskCall] = useState("Yes");
   const [tasks, setTasks] = useState("Lunchtime");
   const [medCall, setMedCall] = useState("No");
+  const [pendingCriticalAction, setPendingCriticalAction] = useState<null | {
+    title: string;
+    description: string;
+    actionLabel: string;
+    onConfirm: () => void;
+  }>(null);
 
   useEffect(() => {
     if (!shift) return;
@@ -197,22 +213,29 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
   const mins = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 
   const handleSave = () => {
-    onSave({
-      service,
-      rotaType,
-      date: dateStr,
-      startH: Number(startH),
-      startM: Number(startM),
-      endH: Number(endH),
-      endM: Number(endM),
-      link,
-      alert,
-      taskCall,
-      tasks,
-      medCall,
+    setPendingCriticalAction({
+      title: "Update shift details?",
+      description: `Confirm changes to shift ${shift.ref} for ${shift.client} on ${dateStr}.`,
+      actionLabel: "Update shift",
+      onConfirm: () => {
+        onSave({
+          service,
+          rotaType,
+          date: dateStr,
+          startH: Number(startH),
+          startM: Number(startM),
+          endH: Number(endH),
+          endM: Number(endM),
+          link,
+          alert,
+          taskCall,
+          tasks,
+          medCall,
+        });
+        toast.success("Shift updated");
+        onOpenChange(false);
+      },
     });
-    toast.success("Shift updated");
-    onOpenChange(false);
   };
 
   return (
@@ -602,6 +625,31 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
         </div>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog
+      open={!!pendingCriticalAction}
+      onOpenChange={(open) => {
+        if (!open) setPendingCriticalAction(null);
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+          <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              pendingCriticalAction?.onConfirm();
+              setPendingCriticalAction(null);
+            }}
+          >
+            {pendingCriticalAction?.actionLabel ?? "Confirm"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
