@@ -525,7 +525,9 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
               )}
             </div>
           </div>
+          </fieldset>
         </div>
+
       </DialogContent>
     </Dialog>
   );
