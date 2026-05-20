@@ -484,11 +484,17 @@ export default function AdvancedRota() {
     );
     const newStaff = staffRows[rowIdx];
 
+    // Magnet snap: when assigning an unassigned shift to a caregiver,
+    // lock the time to the shift's predefined slot rather than the pointer x.
+    const isUnassignedShift = shift.staff === UNASSIGNED;
+    const snappedStart = isUnassignedShift && newStaff !== UNASSIGNED ? shift.start : newStart;
+    const snappedEnd = isUnassignedShift && newStaff !== UNASSIGNED ? shift.end : newStart + length;
+
     setHoverGhost({
       id: shift.id,
       staff: newStaff,
-      start: newStart,
-      end: newStart + length,
+      start: snappedStart,
+      end: snappedEnd,
       dayIndex: dayIdx,
     });
   }
