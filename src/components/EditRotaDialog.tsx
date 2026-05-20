@@ -219,8 +219,15 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1">
+          {readOnly && (
+            <div className="px-5 py-2 text-[11px] font-medium text-amber-900 bg-amber-100 border-b border-amber-300">
+              This shift has already started or completed — view only. It can't be edited or moved.
+            </div>
+          )}
+          <fieldset disabled={readOnly} className={cn("contents", readOnly && "[&_input]:cursor-not-allowed [&_button]:cursor-not-allowed")}>
           {/* Summary table */}
           <div className="border-b border-border">
+
             <div className="overflow-x-auto">
               <table className="w-full text-xs min-w-[1100px]">
                 <thead>
