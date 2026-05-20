@@ -1284,7 +1284,13 @@ export default function AdvancedRota() {
         onOpenChange={(o) => !o && setEditing(null)}
         shift={editing}
         onSave={handleSaveEdit}
+        readOnly={(() => {
+          if (!editing) return false;
+          const s = [...shifts, ...unassignedShifts].find((x) => x.id === editing.id);
+          return s ? shiftHasStarted(s) : false;
+        })()}
       />
+
 
       <AlertDialog open={!!pendingMove} onOpenChange={(o) => !o && setPendingMove(null)}>
         <AlertDialogContent>
