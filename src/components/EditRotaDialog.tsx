@@ -224,7 +224,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
               This shift has already started or completed — view only. It can't be edited or moved.
             </div>
           )}
-          <fieldset disabled={readOnly} className={cn("contents", readOnly && "[&_input]:cursor-not-allowed [&_button]:cursor-not-allowed")}>
+          <fieldset disabled={readOnly} className="contents">
           {/* Summary table */}
           <div className="border-b border-border">
 
@@ -348,7 +348,7 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                   <h3 className="text-base font-semibold text-foreground mb-5 text-center">
                     Edit Rota Details
                   </h3>
-                  <div className="space-y-3.5">
+                  <div className={cn("space-y-3.5", readOnly && "pointer-events-none opacity-70 select-none")}>
                     <FormRow label="Service" required>
                       <Select value={service} onValueChange={setService}>
                         <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
