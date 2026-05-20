@@ -456,11 +456,13 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     </FormRow>
                   </div>
 
-                  <div className="flex justify-center mt-7">
-                    <Button onClick={handleSave} className="h-8 px-6 text-xs">
-                      Update Shift
-                    </Button>
-                  </div>
+                  {!readOnly && (
+                    <div className="flex justify-center mt-7">
+                      <Button onClick={handleSave} className="h-8 px-6 text-xs">
+                        Update Shift
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
