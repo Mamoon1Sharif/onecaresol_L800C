@@ -25,9 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useCareGivers, useCareReceivers, useDailyVisitsRange } from "@/hooks/use-care-data";
 import { getVisitStatus } from "@/lib/visit-status-utils";
-import { getAssignedShifts, subscribeAssignedShifts, timeToHours } from "@/lib/assigned-shifts";
+import { getAssignedShifts, subscribeAssignedShifts, timeToHours, saveAssignedShift, removeAssignedShift, isShiftAssigned } from "@/lib/assigned-shifts";
 import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
-import { isShiftAssigned } from "@/lib/assigned-shifts";
 import { supabase } from "@/integrations/supabase/client";
 import { EditRotaDialog, type EditRotaShift } from "@/components/EditRotaDialog";
 import { useNavigate } from "react-router-dom";
@@ -543,26 +542,69 @@ export default function AdvancedRota() {
 
   function confirmPendingMove() {
     if (!pendingMove) return;
-    setOverrides((prev) => ({
-      ...prev,
-      [pendingMove.id]: {
+
+    const targetDay = days[pendingMove.toDayIndex] ?? days[0];
+    const dateIso = formatDateISO(targetDay);
+    const isUnassignedSynthetic = pendingMove.id.startsWith("unassigned-");
+    const isAssignedSynthetic = pendingMove.id.startsWith("assigned-");
+    const movingToUnassigned = pendingMove.toStaff === "Unassigned Shifts";
+
+    if (movingToUnassigned) {
+      // Send back to the unassigned pool — drop any persisted assignment.
+      if (isAssignedSynthetic || isUnassignedSynthetic) {
+        removeAssignedShift(pendingMove.ref);
+      }
+      setOverrides((prev) => {
+        const next = { ...prev };
+        delete next[pendingMove.id];
+        return next;
+      });
+    } else if (isUnassignedSynthetic || isAssignedSynthetic) {
+      // Persist the assignment so it survives refresh and disappears
+      // from the unassigned panel everywhere.
+      saveAssignedShift({
+        ref: pendingMove.ref,
+        dateIso,
+        start: fmtTime(pendingMove.toStart),
+        end: fmtTime(pendingMove.toEnd),
+        client: pendingMove.client,
         staff: pendingMove.toStaff,
-        start: pendingMove.toStart,
-        end: pendingMove.toEnd,
-        dayIndex: pendingMove.toDayIndex,
-      },
-    }));
+        serviceCall: pendingMove.service,
+      });
+      // Clear any override on the old synthetic id — the shift will now
+      // be rendered as `assigned-<ref>` from the persisted store.
+      setOverrides((prev) => {
+        const next = { ...prev };
+        delete next[pendingMove.id];
+        return next;
+      });
+    } else {
+      // Regular DB-backed shift — keep the local override behaviour.
+      setOverrides((prev) => ({
+        ...prev,
+        [pendingMove.id]: {
+          staff: pendingMove.toStaff,
+          start: pendingMove.toStart,
+          end: pendingMove.toEnd,
+          dayIndex: pendingMove.toDayIndex,
+        },
+      }));
+    }
+
     const wasUnassigned = pendingMove.fromStaff === "Unassigned Shifts";
     toast.success(
-      wasUnassigned
-        ? `Shift assigned to ${pendingMove.toStaff}`
-        : `Shift moved to ${pendingMove.toStaff}`,
+      movingToUnassigned
+        ? `Shift moved back to Unassigned`
+        : wasUnassigned
+          ? `Shift assigned to ${pendingMove.toStaff}`
+          : `Shift moved to ${pendingMove.toStaff}`,
       {
         description: `${pendingMove.client} • ${fmtTime(pendingMove.toStart)}–${fmtTime(pendingMove.toEnd)} • Ref ${pendingMove.ref}`,
       }
     );
     setPendingMove(null);
   }
+
 
   function handleSaveEdit(updates: {
     service: string;
