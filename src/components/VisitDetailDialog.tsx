@@ -1096,7 +1096,6 @@ function ShiftTasks({ visitId, shiftEnd, clockOut, isMissed = false }: { visitId
                 <li key={t.id} className="flex items-center gap-2 text-xs">
                   <CheckCircle2 className="h-3.5 w-3.5 text-success flex-shrink-0" />
                   <span className="line-through text-muted-foreground flex-1">{t.title}</span>
-                  <span className="font-mono text-[10px] text-success">{t.completedAt}</span>
                 </li>
               ))}
             </ul>
@@ -1162,47 +1161,59 @@ function MedicationFeed({ visitId }: { visitId: string }) {
         return;
       }
 
-      const [{ data: meds = [], error: medErr }, { data: shiftMeds = [], error: shiftErr }] = await Promise.all([
-        supabase
+      // Check whether any shift-task medication rows exist for this visit
+      const { data: anyShiftRows = [], error: anyShiftErr } = await supabase
+        .from("shift_task_medician")
+        .select("id")
+        .eq("daily_visit_id", visitId)
+        .limit(1);
+
+      if (cancelled) return;
+      if (anyShiftErr) {
+        toast.error("Failed to check shift-task medications: " + anyShiftErr.message);
+        setMeds([]);
+      } else if ((anyShiftRows ?? []).length > 0) {
+        // There are shift-task meds for this visit: only show those that are completed.
+        const { data: completedShiftMeds = [], error: shiftErr } = await supabase
+          .from("shift_task_medician")
+          .select("id,title,medication,dosage,medication_id,notes,created_at,medications(notes)")
+          .eq("daily_visit_id", visitId)
+          .eq("is_completed", true)
+          .order("created_at", { ascending: false });
+
+        if (cancelled) return;
+        if (shiftErr) {
+          toast.error("Failed to load completed shift-task medications: " + shiftErr.message);
+          setMeds([]);
+        } else {
+          const shiftRecords = (completedShiftMeds ?? []).map((item: any) => ({
+            id: item.id,
+            date: String(visit.visit_date),
+            medication: item.medication || item.title || "Medication",
+            dosage: item.dosage || "",
+            administered_by: null,
+            notes: item.notes ?? item.medications?.notes ?? item.title ?? null,
+            time_of_day: null,
+            scheduled_time: null,
+            created_at: item.created_at,
+          }));
+          setMeds(shiftRecords as MedicationRecord[]);
+        }
+      } else {
+        // No shift-task meds exist for this visit → fall back to day-level `medications` table
+        const { data: meds = [], error: medErr } = await supabase
           .from("medications")
           .select("id,date,medication,dosage,administered_by,notes,time_of_day,scheduled_time,created_at")
           .eq("care_receiver_id", visit.care_receiver_id)
           .eq("date", String(visit.visit_date))
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("shift_task_medician")
-          .select("id,medication,dosage,medication_id,created_at")
-          .eq("daily_visit_id", visitId)
-          .order("created_at", { ascending: false }),
-      ]);
-
-      if (cancelled) return;
-      if (medErr || shiftErr) {
-        toast.error("Failed to load medications: " + (medErr?.message ?? shiftErr?.message ?? "unknown error"));
-        setMeds([]);
-      } else {
-        const existingMedIds = new Set((meds ?? []).map((m: any) => m.id));
-        const existingMedKeys = new Set(
-          (meds ?? []).map((m: any) => `${String(m.medication || "").trim().toLowerCase()}|${String(m.dosage || "").trim().toLowerCase()}`),
-        );
-        const additional = (shiftMeds ?? []).reduce((acc: MedicationRecord[], item: any) => {
-          const key = `${String(item.medication || "").trim().toLowerCase()}|${String(item.dosage || "").trim().toLowerCase()}`;
-          if (item.medication_id && existingMedIds.has(item.medication_id)) return acc;
-          if (existingMedKeys.has(key)) return acc;
-          acc.push({
-            id: item.id,
-            date: String(visit.visit_date),
-            medication: item.medication || "Medication",
-            dosage: item.dosage || "",
-            administered_by: null,
-            notes: null,
-            time_of_day: null,
-            scheduled_time: null,
-            created_at: item.created_at,
-          });
-          return acc;
-        }, []);
-        setMeds([...(meds ?? []), ...additional] as MedicationRecord[]);
+          .order("created_at", { ascending: false });
+        if (cancelled) return;
+        if (medErr) {
+          toast.error("Failed to load medications: " + medErr.message);
+          setMeds([]);
+        } else {
+          setMeds((meds ?? []) as MedicationRecord[]);
+        }
       }
       setLoading(false);
     })();

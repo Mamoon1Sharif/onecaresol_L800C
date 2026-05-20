@@ -167,7 +167,7 @@ export function ShiftDetailDialog({ open, onOpenChange, visit }: Props) {
                     </p>
                     {task.is_completed && task.completed_by && (
                       <p className="text-[10px] text-muted-foreground">
-                        Done by {task.completed_by === visit.care_giver_id ? (visit.care_givers as any)?.name : task.completed_by} · {task.completed_at ? new Date(task.completed_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : ""}
+                        Done by {task.completed_by === visit.care_giver_id ? (visit.care_givers as any)?.name : task.completed_by}
                       </p>
                     )}
                   </div>
@@ -189,12 +189,11 @@ export function ShiftDetailDialog({ open, onOpenChange, visit }: Props) {
               )}
               {notes.map((n) => (
                 <div key={n.id} className="bg-muted/50 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-foreground">
-                      {n.author === visit.care_giver_id ? (visit.care_givers as any)?.name : n.author}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">{new Date(n.created_at).toLocaleString("en-GB", { timeZone: "Asia/Karachi" })}</span>
-                  </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-foreground">
+                        {n.author === visit.care_giver_id ? (visit.care_givers as any)?.name : n.author}
+                      </span>
+                    </div>
                   <p className="text-sm text-foreground">{n.note}</p>
                 </div>
               ))}
