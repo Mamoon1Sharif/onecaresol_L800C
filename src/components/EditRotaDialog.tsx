@@ -82,25 +82,17 @@ interface Props {
 
 type Tab =
   | "edit"
-  | "edit-staff"
   | "service-user"
   | "manual-in"
   | "manual-out"
-  | "notes"
-  | "tasks"
-  | "medication"
   | "shadows"
   | "locks";
 
 const TABS: { id: Tab; label: string; icon: typeof Pencil }[] = [
   { id: "edit", label: "Edit", icon: Pencil },
-  { id: "edit-staff", label: "Edit Staff with Visual", icon: Eye },
   { id: "service-user", label: "Go to Service Members Profile", icon: UserCog },
   { id: "manual-in", label: "Manual Clock In", icon: LogIn },
   { id: "manual-out", label: "Manual Clock Out", icon: LogOut },
-  { id: "notes", label: "Notes", icon: StickyNote },
-  { id: "tasks", label: "Tasks", icon: CheckSquare },
-  { id: "medication", label: "Medication", icon: Pill },
   { id: "shadows", label: "Shadows", icon: Users },
   { id: "locks", label: "Locks", icon: Lock },
 ];
@@ -549,14 +541,6 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                   </div>
                 )}
 
-                {active === "edit-staff" && (
-                  <PlaceholderPanel
-                    title="Edit Staff with Visual"
-                    description="Visual staff allocation with availability heatmap. Pick a care giver by viewing their schedule and skills side-by-side."
-                    cta="Open Visual Allocator"
-                  />
-                )}
-
                 {active === "service-user" && (
                   <PlaceholderPanel
                     title="Service Member Profile"
@@ -586,18 +570,6 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     }}
                   />
                 )}
-
-                {active === "notes" && (
-                  <NotesPanel
-                    onSave={() => {
-                      toast.success("Note saved");
-                    }}
-                  />
-                )}
-
-                {active === "tasks" && <TasksPanel />}
-
-                {active === "medication" && <MedicationPanel shift={shift} />}
 
                 {active === "shadows" && (
                   <PlaceholderPanel
