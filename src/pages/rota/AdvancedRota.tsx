@@ -573,6 +573,33 @@ export default function AdvancedRota() {
     };
   }, [drag, hoverGhost, shifts]);
 
+  function persistDbVisitMove(
+    dbId: string,
+    toStaff: string,
+    toStart: number,
+    toEnd: number,
+  ) {
+    const startH = Math.floor(toStart);
+    const startM = Math.round((toStart - startH) * 60);
+    const durationMin = Math.max(1, Math.round((toEnd - toStart) * 60));
+    const newCgId =
+      toStaff === UNASSIGNED ? null : cgIdByName.get(toStaff.toLowerCase()) ?? null;
+    updateDailyVisit.mutate(
+      {
+        id: dbId,
+        care_giver_id: newCgId,
+        start_hour: startH,
+        start_minute: startM,
+        duration_minutes: durationMin,
+      },
+      {
+        onError: (err: any) => {
+          toast.error("Failed to save shift to database", { description: err?.message });
+        },
+      }
+    );
+  }
+
   function confirmPendingMove() {
     if (!pendingMove) return;
 
@@ -586,6 +613,9 @@ export default function AdvancedRota() {
       // Send back to the unassigned pool — drop any persisted assignment.
       if (isAssignedSynthetic || isUnassignedSynthetic) {
         removeAssignedShift(pendingMove.ref);
+      } else {
+        // Real DB-backed shift — clear the caregiver in the DB.
+        persistDbVisitMove(pendingMove.id, UNASSIGNED, pendingMove.toStart, pendingMove.toEnd);
       }
       setOverrides((prev) => {
         const next = { ...prev };
@@ -593,8 +623,7 @@ export default function AdvancedRota() {
         return next;
       });
     } else if (isUnassignedSynthetic || isAssignedSynthetic) {
-      // Persist the assignment so it survives refresh and disappears
-      // from the unassigned panel everywhere.
+      // Synthetic shifts (from the conflicts pool) live in local storage.
       saveAssignedShift({
         ref: pendingMove.ref,
         dateIso,
@@ -604,15 +633,14 @@ export default function AdvancedRota() {
         staff: pendingMove.toStaff,
         serviceCall: pendingMove.service,
       });
-      // Clear any override on the old synthetic id — the shift will now
-      // be rendered as `assigned-<ref>` from the persisted store.
       setOverrides((prev) => {
         const next = { ...prev };
         delete next[pendingMove.id];
         return next;
       });
     } else {
-      // Regular DB-backed shift — keep the local override behaviour.
+      // Real DB-backed shift — persist to database AND keep optimistic override.
+      persistDbVisitMove(pendingMove.id, pendingMove.toStaff, pendingMove.toStart, pendingMove.toEnd);
       setOverrides((prev) => ({
         ...prev,
         [pendingMove.id]: {
@@ -637,6 +665,8 @@ export default function AdvancedRota() {
     );
     setPendingMove(null);
   }
+
+
 
 
   function handleSaveEdit(updates: {
