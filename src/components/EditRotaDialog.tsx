@@ -85,6 +85,8 @@ interface Props {
     tasks: string;
     medCall: string;
   }) => void;
+  /** When true, the dialog is view-only: all inputs disabled and Save is hidden. */
+  readOnly?: boolean;
 }
 
 type Tab =
