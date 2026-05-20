@@ -670,7 +670,7 @@ function NotesPanel({ onSave }: { onSave: () => void }) {
   const [note, setNote] = useState("");
   return (
     <div className="max-w-2xl mx-auto">
-      <h3 className="text-base font-semibold text-foreground mb-5 text-center">Observation Notes</h3>
+      <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Notes</h3>
       <Textarea
         value={note}
         onChange={(e) => setNote(e.target.value)}

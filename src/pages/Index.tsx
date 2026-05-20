@@ -207,7 +207,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
                       key={vn.id}
                       className="text-sm text-foreground bg-blue-50 dark:bg-blue-950/20 rounded px-3 py-1.5 border border-blue-200/50 dark:border-blue-800/30"
                     >
-                      <span className="font-semibold text-blue-700 dark:text-blue-400 text-xs">Umar Note:</span>{" "}
+                      <span className="font-semibold text-blue-700 dark:text-blue-400 text-xs">Visit Note:</span>{" "}
                       {vn.note}
                       <span className="text-[10px] text-muted-foreground ml-2">by {vn.caregiver}</span>
                     </div>
