@@ -118,7 +118,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
 
   const lateMins = getLateMins(v);
   const completedTasks = tasks.filter((t: any) => t.is_completed).length;
-  const careNotesCount = (careTaskNotes as any[]).length + (medicationNotes as any[]).length;
+  const careNotesCount = (medicationNotes as any[]).length;
 
   return (
     <>
