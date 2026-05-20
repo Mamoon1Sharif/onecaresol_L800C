@@ -234,6 +234,13 @@ export default function AdvancedRota() {
   const gridRef = useRef<HTMLDivElement>(null);
   const unassignedPanelRef = useRef<HTMLDivElement>(null);
 
+  // Live "now" tick for the daily timeline indicator (updates every 30s)
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const dateLabel = useMemo(() => {
     if (viewMode === 'daily') return formatDateShort(date);
     const weekEnd = addDays(date, 6);
@@ -1019,7 +1026,26 @@ export default function AdvancedRota() {
                       </div>
                     </div>
 
+                    {/* Live current-time indicator (only when viewing today) */}
+                    {isSameDay(date, now) && (() => {
+                      const hoursNow = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+                      const left = hoursNow * PX_PER_HOUR;
+                      return (
+                        <div
+                          className="pointer-events-none absolute z-20"
+                          style={{ left, top: HEADER_H, bottom: 0, width: 0 }}
+                        >
+                          <div className="absolute -top-1 -left-1 h-2 w-2 rounded-full bg-rose-500 shadow" />
+                          <div className="absolute top-0 left-0 h-full w-px bg-rose-500/90 shadow-[0_0_6px_hsl(0_84%_60%/0.6)]" />
+                          <div className="absolute -top-4 left-1 text-[10px] font-semibold text-rose-600 bg-background/80 px-1 rounded">
+                            {String(now.getHours()).padStart(2, "0")}:{String(now.getMinutes()).padStart(2, "0")}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Rows (daily) */}
+
                     {staffRows.map((staff, rowIdx) => (
                       <div
                         key={staff}
