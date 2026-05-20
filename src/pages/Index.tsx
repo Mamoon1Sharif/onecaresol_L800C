@@ -179,6 +179,14 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
               <ClipboardCheck className="h-4 w-4" />
               {completedTasks}/{tasks.length}
             </button>
+            <button
+              onClick={() => setShowCareNotes(!showCareNotes)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${showCareNotes ? "bg-primary/15 text-primary shadow-sm" : "hover:bg-muted/80 text-muted-foreground hover:text-foreground"}`}
+              title="Task & medication notes"
+            >
+              <Pill className="h-4 w-4" />
+              {careNotesCount}
+            </button>
           </div>
         </TableCell>
       </TableRow>
