@@ -118,7 +118,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
 
   const lateMins = getLateMins(v);
   const completedTasks = tasks.filter((t: any) => t.is_completed).length;
-  const careNotesCount = (careTaskNotes as any[]).length + (medicationNotes as any[]).length;
+  const careNotesCount = (medicationNotes as any[]).length;
 
   return (
     <>
@@ -281,74 +281,35 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
       {showCareNotes && (
         <TableRow className="bg-muted/20">
           <TableCell colSpan={8} className="py-2 px-6">
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                  <ClipboardCheck className="h-3 w-3" /> Task Notes
-                </p>
-                {(careTaskNotes as any[]).length === 0 ? (
-                  <div className="text-xs text-muted-foreground italic px-3 py-1.5">
-                    No task notes recorded.
-                  </div>
-                ) : (
-                  (careTaskNotes as any[]).map((t: any) => (
-                    <div
-                      key={t.id}
-                      className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-primary text-xs">{t.title}</span>
-                        {t.status && (
-                          <span className="text-[10px] text-muted-foreground">· {t.status}</span>
-                        )}
-                      </div>
-                      {t.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
-                      )}
-                      {t.outcome && (
-                        <p className="text-xs text-foreground mt-0.5">
-                          <span className="font-medium">Outcome:</span> {t.outcome}
-                        </p>
+            <div className="space-y-1.5">
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
+                <Pill className="h-3 w-3" /> Medication Notes
+              </p>
+              {(medicationNotes as any[]).length === 0 ? (
+                <div className="text-xs text-muted-foreground italic px-3 py-1.5">
+                  No medication notes recorded for this shift.
+                </div>
+              ) : (
+                (medicationNotes as any[]).map((m: any) => (
+                  <div
+                    key={m.id}
+                    className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-primary text-xs">
+                        {m.medication || m.title}
+                      </span>
+                      {m.dosage && (
+                        <span className="text-[10px] text-muted-foreground">· {m.dosage}</span>
                       )}
                     </div>
-                  ))
-                )}
-              </div>
-              <div className="space-y-1.5">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                  <Pill className="h-3 w-3" /> Medication Notes
-                </p>
-                {(medicationNotes as any[]).length === 0 ? (
-                  <div className="text-xs text-muted-foreground italic px-3 py-1.5">
-                    No medication notes recorded.
+                    <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>
+                    {m.completed_by && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">by {m.completed_by}</p>
+                    )}
                   </div>
-                ) : (
-                  (medicationNotes as any[]).map((m: any) => (
-                    <div
-                      key={m.id}
-                      className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-primary text-xs">{m.medication}</span>
-                        {m.dosage && (
-                          <span className="text-[10px] text-muted-foreground">· {m.dosage}</span>
-                        )}
-                        {m.scheduled_time && (
-                          <span className="text-[10px] text-muted-foreground">· {m.scheduled_time}</span>
-                        )}
-                      </div>
-                      {m.notes ? (
-                        <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic mt-0.5">No notes</p>
-                      )}
-                      {m.administered_by && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">by {m.administered_by}</p>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+                ))
+              )}
             </div>
           </TableCell>
         </TableRow>
