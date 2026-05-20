@@ -1026,7 +1026,7 @@ function MedicationFeed({ visitId }: { visitId: string }) {
           .order("created_at", { ascending: false }),
         supabase
           .from("shift_task_medician")
-          .select("id,medication,dosage,created_at")
+          .select("id,medication,dosage,medication_id,created_at")
           .eq("daily_visit_id", visitId)
           .order("created_at", { ascending: false }),
       ]);
@@ -1036,17 +1036,27 @@ function MedicationFeed({ visitId }: { visitId: string }) {
         toast.error("Failed to load medications: " + (medErr?.message ?? shiftErr?.message ?? "unknown error"));
         setMeds([]);
       } else {
-        const additional = (shiftMeds ?? []).map((item: any) => ({
-          id: item.id,
-          date: String(visit.visit_date),
-          medication: item.medication || "Medication",
-          dosage: item.dosage || "",
-          administered_by: null,
-          notes: null,
-          time_of_day: null,
-          scheduled_time: null,
-          created_at: item.created_at,
-        }));
+        const existingMedIds = new Set((meds ?? []).map((m: any) => m.id));
+        const existingMedKeys = new Set(
+          (meds ?? []).map((m: any) => `${String(m.medication || "").trim().toLowerCase()}|${String(m.dosage || "").trim().toLowerCase()}`),
+        );
+        const additional = (shiftMeds ?? []).reduce((acc: MedicationRecord[], item: any) => {
+          const key = `${String(item.medication || "").trim().toLowerCase()}|${String(item.dosage || "").trim().toLowerCase()}`;
+          if (item.medication_id && existingMedIds.has(item.medication_id)) return acc;
+          if (existingMedKeys.has(key)) return acc;
+          acc.push({
+            id: item.id,
+            date: String(visit.visit_date),
+            medication: item.medication || "Medication",
+            dosage: item.dosage || "",
+            administered_by: null,
+            notes: null,
+            time_of_day: null,
+            scheduled_time: null,
+            created_at: item.created_at,
+          });
+          return acc;
+        }, []);
         setMeds([...(meds ?? []), ...additional] as MedicationRecord[]);
       }
       setLoading(false);
