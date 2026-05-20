@@ -182,7 +182,7 @@ const DailyRoster = () => {
         status,
         isFuture,
         accepted,
-        serviceUser: `${cr.name ?? "Unknown"}${postcode ? "-" + postcode.replace(" ", "") : ""}`,
+        serviceUser: cr.name ?? "Unknown",
         serviceUserRaw: cr.name ?? "Unknown",
         scheduledStart: fmtHour(start, startMin),
         scheduledEnd: fmtHour(endH, endM),
