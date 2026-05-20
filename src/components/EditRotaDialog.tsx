@@ -364,7 +364,13 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                     return (
                       <button
                         key={t.id}
-                        onClick={() => setActive(t.id)}
+                        onClick={() => {
+                          if (t.id === "service-user") {
+                            goToServiceMember();
+                            return;
+                          }
+                          setActive(t.id);
+                        }}
                         className={cn(
                           "w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-left transition-colors border-l-2",
                           isActive
