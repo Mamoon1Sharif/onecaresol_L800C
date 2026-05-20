@@ -155,6 +155,8 @@ function statusStyles(s: ShiftStatus) {
       return "bg-cyan-200/90 border-cyan-400 text-cyan-900";
     case "scheduled":
       return "bg-blue-200/90 border-blue-400 text-blue-900";
+    case "due":
+      return "bg-blue-200/90 border-blue-400 text-blue-900";
     case "missed":
       return "bg-rose-200/90 border-rose-400 text-rose-900";
     case "oncall":
