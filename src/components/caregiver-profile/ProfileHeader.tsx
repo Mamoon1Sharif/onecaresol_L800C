@@ -16,6 +16,10 @@ import { TagsDialog } from "@/components/receiver-profile/TagsDialog";
 import { getTagDef } from "@/lib/receiver-tags";
 import { cn } from "@/lib/utils";
 import { CAREGIVER_STATUS_OPTIONS } from "@/lib/profile-options";
+import {
+  useCaregiverHolidayEntries,
+  caregiverUnavailableReason,
+} from "@/hooks/use-caregiver-availability";
 import type { Tables } from "@/integrations/supabase/types";
 
 type CareGiver = Tables<"care_givers">;
@@ -33,6 +37,18 @@ export function ProfileHeader({ cg }: Props) {
   const [tagsOpen, setTagsOpen] = useState(false);
 
   const tags: string[] = Array.isArray((cg as any).tags) ? (cg as any).tags : [];
+
+  const { data: holidayEntries = [] } = useCaregiverHolidayEntries();
+  const todayStr = new Date().toISOString().split("T")[0];
+  const leaveReason = caregiverUnavailableReason(cg as any, holidayEntries, todayStr);
+  const onLeave = leaveReason?.kind === "holiday" || leaveReason?.kind === "training";
+  const displayLabel = onLeave
+    ? leaveReason!.kind === "training"
+      ? "On Training"
+      : leaveReason!.label === "On Absence"
+      ? "On Absence"
+      : "On Leave"
+    : cg.status;
 
   const handleStatusChange = async (status: string) => {
     try {
@@ -104,13 +120,14 @@ export function ProfileHeader({ cg }: Props) {
                   <SelectTrigger
                     className={cn(
                       "h-7 w-auto gap-1.5 rounded-full border px-3 py-0 text-xs font-medium",
-                      cg.status === "Active" && "bg-success/15 text-success border-success/20",
-                      cg.status === "Onboarding" && "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800",
-                      cg.status === "Inactive" && "bg-muted text-muted-foreground border-border",
+                      onLeave && "bg-warning/15 text-warning border-warning/20",
+                      !onLeave && cg.status === "Active" && "bg-success/15 text-success border-success/20",
+                      !onLeave && cg.status === "Onboarding" && "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800",
+                      !onLeave && cg.status === "Inactive" && "bg-muted text-muted-foreground border-border",
                     )}
                   >
                     <Activity className="h-3 w-3" />
-                    <SelectValue placeholder="Set status" />
+                    <span>{displayLabel || "Set status"}</span>
                   </SelectTrigger>
                   <SelectContent>
                     {CAREGIVER_STATUS_OPTIONS.map((s) => (
