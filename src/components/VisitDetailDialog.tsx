@@ -634,7 +634,6 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
               <section>
                 <div className="flex items-center justify-between border-b pb-1 mb-2">
                   <h3 className="text-sm font-semibold flex items-center gap-1.5"><Lock className="h-3.5 w-3.5" /> Rota Locks</h3>
-                  <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8 text-xs gap-1" onClick={() => setLockOpen(true)}>
                   <Button
                     size="sm"
                     disabled={isImmutable}
