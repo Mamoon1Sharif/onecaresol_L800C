@@ -575,6 +575,12 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
                   />
                 )}
 
+                {active === "tasks" && <LiveTasksPanel visitId={shift.id} />}
+
+                {active === "medication" && <LiveMedicationPanel visitId={shift.id} />}
+
+
+
                 {active === "shadows" && (
                   <PlaceholderPanel
                     title="Shadows"
