@@ -484,11 +484,17 @@ export default function AdvancedRota() {
     );
     const newStaff = staffRows[rowIdx];
 
+    // Magnet snap: when assigning an unassigned shift to a caregiver,
+    // lock the time to the shift's predefined slot rather than the pointer x.
+    const isUnassignedShift = shift.staff === UNASSIGNED;
+    const snappedStart = isUnassignedShift && newStaff !== UNASSIGNED ? shift.start : newStart;
+    const snappedEnd = isUnassignedShift && newStaff !== UNASSIGNED ? shift.end : newStart + length;
+
     setHoverGhost({
       id: shift.id,
       staff: newStaff,
-      start: newStart,
-      end: newStart + length,
+      start: snappedStart,
+      end: snappedEnd,
       dayIndex: dayIdx,
     });
   }
@@ -731,7 +737,9 @@ export default function AdvancedRota() {
       return;
     }
     const length = s.end - s.start;
-    let start = toStart ?? s.start;
+    // Magnet snap: assigning an unassigned shift locks to its predefined time slot.
+    const isAssigningUnassigned = s.staff === UNASSIGNED && toStaff !== UNASSIGNED;
+    let start = isAssigningUnassigned ? s.start : (toStart ?? s.start);
     // snap to 15 min and clamp into 0..24
     start = Math.max(0, Math.min(24 - length, Math.round(start * 4) / 4));
     const end = start + length;
