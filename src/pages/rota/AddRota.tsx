@@ -103,6 +103,10 @@ const AddRota = () => {
     alert: false,
     recurring: false,
     template: false,
+    entryCode: "",
+    alarmCode: "",
+    entryInstructions: "",
+    alarmInstructions: "",
   });
   const [selectedMedIds, setSelectedMedIds] = useState<string[]>([]);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
