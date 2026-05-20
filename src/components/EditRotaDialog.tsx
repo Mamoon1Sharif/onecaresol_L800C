@@ -144,6 +144,25 @@ function statusTone(status: string) {
 
 export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = false }: Props) {
   const [active, setActive] = useState<Tab>("edit");
+  const navigate = useNavigate();
+  const { data: receivers = [] } = useCareReceivers();
+
+  const visibleTabs = readOnly
+    ? TABS.filter((t) => !["manual-in", "manual-out", "shadows", "locks"].includes(t.id))
+    : TABS;
+
+  const goToServiceMember = () => {
+    if (!shift) return;
+    const clientName = (shift.client || "").trim().toLowerCase();
+    const match = receivers.find((r) => (r.name || "").trim().toLowerCase() === clientName);
+    if (match) {
+      onOpenChange(false);
+      navigate(`/carereceivers/${match.id}`);
+    } else {
+      onOpenChange(false);
+      navigate(`/carereceivers`);
+    }
+  };
 
   // form state
   const [service, setService] = useState("WCC - Lunch Call (Z4-T3)");
