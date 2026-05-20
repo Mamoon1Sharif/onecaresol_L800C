@@ -1286,7 +1286,7 @@ export default function AdvancedRota() {
         onSave={handleSaveEdit}
         readOnly={(() => {
           if (!editing) return false;
-          const s = [...shifts, ...unassignedShifts].find((x) => x.id === editing.id);
+          const s = shifts.find((x) => x.id === editing.id);
           return s ? shiftHasStarted(s) : false;
         })()}
       />
