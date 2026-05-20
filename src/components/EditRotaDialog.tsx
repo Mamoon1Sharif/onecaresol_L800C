@@ -1,19 +1,18 @@
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -47,6 +46,8 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
+import { useCareReceivers } from "@/hooks/use-care-data";
 
 export interface EditRotaShift {
   id: string;
@@ -91,11 +92,9 @@ interface Props {
 
 type Tab =
   | "edit"
-  | "edit-staff"
   | "service-user"
   | "manual-in"
   | "manual-out"
-  | "notes"
   | "tasks"
   | "medication"
   | "shadows"
@@ -103,11 +102,9 @@ type Tab =
 
 const TABS: { id: Tab; label: string; icon: typeof Pencil }[] = [
   { id: "edit", label: "Edit", icon: Pencil },
-  { id: "edit-staff", label: "Edit Staff with Visual", icon: Eye },
   { id: "service-user", label: "Go to Service Members Profile", icon: UserCog },
   { id: "manual-in", label: "Manual Clock In", icon: LogIn },
   { id: "manual-out", label: "Manual Clock Out", icon: LogOut },
-  { id: "notes", label: "Notes", icon: StickyNote },
   { id: "tasks", label: "Tasks", icon: CheckSquare },
   { id: "medication", label: "Medication", icon: Pill },
   { id: "shadows", label: "Shadows", icon: Users },
@@ -153,6 +150,25 @@ function statusTone(status: string) {
 
 export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = false }: Props) {
   const [active, setActive] = useState<Tab>("edit");
+  const navigate = useNavigate();
+  const { data: receivers = [] } = useCareReceivers();
+
+  const visibleTabs = readOnly
+    ? TABS.filter((t) => !["manual-in", "manual-out", "shadows", "locks"].includes(t.id))
+    : TABS;
+
+  const goToServiceMember = () => {
+    if (!shift) return;
+    const clientName = (shift.client || "").trim().toLowerCase();
+    const match = receivers.find((r) => (r.name || "").trim().toLowerCase() === clientName);
+    if (match) {
+      onOpenChange(false);
+      navigate(`/carereceivers/${match.id}`);
+    } else {
+      onOpenChange(false);
+      navigate(`/carereceivers`);
+    }
+  };
 
   // form state
   const [service, setService] = useState("WCC - Lunch Call (Z4-T3)");
@@ -167,6 +183,12 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
   const [taskCall, setTaskCall] = useState("Yes");
   const [tasks, setTasks] = useState("Lunchtime");
   const [medCall, setMedCall] = useState("No");
+  const [pendingCriticalAction, setPendingCriticalAction] = useState<null | {
+    title: string;
+    description: string;
+    actionLabel: string;
+    onConfirm: () => void;
+  }>(null);
 
   useEffect(() => {
     if (!shift) return;
@@ -191,27 +213,35 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
   const mins = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 
   const handleSave = () => {
-    onSave({
-      service,
-      rotaType,
-      date: dateStr,
-      startH: Number(startH),
-      startM: Number(startM),
-      endH: Number(endH),
-      endM: Number(endM),
-      link,
-      alert,
-      taskCall,
-      tasks,
-      medCall,
+    setPendingCriticalAction({
+      title: "Update shift details?",
+      description: `Confirm changes to shift ${shift.ref} for ${shift.client} on ${dateStr}.`,
+      actionLabel: "Update shift",
+      onConfirm: () => {
+        onSave({
+          service,
+          rotaType,
+          date: dateStr,
+          startH: Number(startH),
+          startM: Number(startM),
+          endH: Number(endH),
+          endM: Number(endM),
+          link,
+          alert,
+          taskCall,
+          tasks,
+          medCall,
+        });
+        toast.success("Shift updated");
+        onOpenChange(false);
+      },
     });
-    toast.success("Shift updated");
-    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl p-0 gap-0 bg-card max-h-[92vh] overflow-hidden flex flex-col">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl p-0 gap-0 bg-card max-h-[92vh] overflow-hidden flex flex-col">
         <DialogHeader className="px-5 py-3 border-b border-border bg-muted/40 shrink-0">
           <DialogTitle className="text-base font-semibold text-foreground">
             Edit Rota Ref: <span className="text-primary">{shift.ref}</span>
@@ -225,313 +255,403 @@ export function EditRotaDialog({ open, onOpenChange, shift, onSave, readOnly = f
             </div>
           )}
           <fieldset disabled={readOnly} className="contents">
-          {/* Summary table */}
-          <div className="border-b border-border">
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs min-w-[1100px]">
-                <thead>
-                  <tr className="bg-muted/60 border-b border-border">
-                    {HEADER_COLS.map((c, i) => (
-                      <th
-                        key={i}
-                        className="px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground border-r border-border last:border-r-0 whitespace-nowrap"
-                      >
-                        {c.icon ? (
-                          <c.icon className={cn("h-3.5 w-3.5", c.tone || "text-muted-foreground")} />
-                        ) : (
-                          c.label
-                        )}
+            {/* Summary table */}
+            <div className="border-b border-border">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[1100px]">
+                  <thead>
+                    <tr className="bg-muted/60 border-b border-border">
+                      {HEADER_COLS.map((c, i) => (
+                        <th
+                          key={i}
+                          className="px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground border-r border-border last:border-r-0 whitespace-nowrap"
+                        >
+                          {c.icon ? (
+                            <c.icon className={cn("h-3.5 w-3.5", c.tone || "text-muted-foreground")} />
+                          ) : (
+                            c.label
+                          )}
+                        </th>
+                      ))}
+                      <th className="px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">
+                        Week
                       </th>
-                    ))}
-                    <th className="px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">Week</th>
-                    <th className="px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">#</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-destructive/5 border-b border-border">
-                    <td className="px-2 py-2 border-r border-border">
-                      <span className="text-primary underline cursor-pointer">{shift.ref}</span>
-                    </td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">{shift.date}</td>
-                    <td className={cn("px-2 py-2 border-r border-border", statusTone(shift.status))}>{shift.status}</td>
-                    <td className="px-2 py-2 border-r border-border text-muted-foreground">×</td>
-                    <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
-                    <td className="px-2 py-2 border-r border-border">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-500" />
-                    </td>
-                    <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
-                    <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">
-                      <span className="text-primary underline cursor-pointer">
-                        {shift.client} - W...
-                      </span>
-                    </td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.start)}</td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.end)}</td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">
-                      {fmtTime(shift.end - shift.start)}
-                    </td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap text-success font-medium">
-                      {shift.checkIn ? new Date(shift.checkIn).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) : "—"}
-                    </td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap text-destructive font-medium">
-                      {shift.checkOut ? new Date(shift.checkOut).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" }) : "—"}
-                    </td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap font-medium">
-                      {shift.checkIn && shift.checkOut ? (() => {
-                        const mins = Math.round((new Date(shift.checkOut).getTime() - new Date(shift.checkIn).getTime()) / 60000);
-                        const h = Math.floor(mins / 60);
-                        const m = mins % 60;
-                        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-                      })() : "—"}
-                    </td>
-                    <td className={cn("px-2 py-2 border-r border-border whitespace-nowrap", shift.staff === "Unassigned Shifts" ? "text-destructive font-medium" : "text-foreground")}>
-                      {shift.staff === "Unassigned Shifts" ? "Unallocated" : shift.staff}
-                    </td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">{service.length > 22 ? service.slice(0, 22) + "..." : service}</td>
-                    <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
-                    <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
-                    <td className="px-2 py-2 border-r border-border whitespace-nowrap">Week {shift.week ?? 1}</td>
-                    <td className="px-2 py-2 whitespace-nowrap text-muted-foreground">{shift.weekNo ?? 17}</td>
-                  </tr>
-                  <tr className="bg-background">
-                    <td className="px-2 py-2 border-r border-border" colSpan={1}>
-                      <div className="font-semibold">{shift.schedHours ?? fmtTime(shift.end - shift.start)}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase">Sched hrs</div>
-                    </td>
-                    <td className="px-2 py-2 border-r border-border" colSpan={1}>
-                      <div className="font-semibold">{shift.clockHours ?? "00:00"}</div>
-                      <div className="text-[10px] text-muted-foreground uppercase">Clock hrs</div>
-                    </td>
-                    <td colSpan={19}></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Body: tabs + form */}
-          <div className="grid grid-cols-12 gap-0">
-            {/* Side tabs */}
-            <div className="col-span-12 md:col-span-3 border-r border-border bg-muted/20">
-              <div className="py-2">
-                {TABS.map((t) => {
-                  const Icon = t.icon;
-                  const isActive = active === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setActive(t.id)}
-                      className={cn(
-                        "w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-left transition-colors border-l-2",
-                        isActive
-                          ? "bg-card border-primary text-primary"
-                          : "border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{t.label}</span>
-                      {isActive && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
-                      )}
-                    </button>
-                  );
-                })}
+                      <th className="px-2 py-2 text-left text-[11px] font-semibold text-muted-foreground whitespace-nowrap">
+                        #
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="bg-destructive/5 border-b border-border">
+                      <td className="px-2 py-2 border-r border-border">
+                        <span className="text-primary underline cursor-pointer">{shift.ref}</span>
+                      </td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">{shift.date}</td>
+                      <td className={cn("px-2 py-2 border-r border-border", statusTone(shift.status))}>
+                        {shift.status}
+                      </td>
+                      <td className="px-2 py-2 border-r border-border text-muted-foreground">×</td>
+                      <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
+                      <td className="px-2 py-2 border-r border-border">
+                        <span className="inline-block h-2.5 w-2.5 rounded-full bg-cyan-500" />
+                      </td>
+                      <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
+                      <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={goToServiceMember}
+                          className="text-primary underline hover:text-primary/80 cursor-pointer bg-transparent p-0"
+                        >
+                          {shift.client} - W...
+                        </button>
+                      </td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.start)}</td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">{fmtTime(shift.end)}</td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">
+                        {fmtTime(shift.end - shift.start)}
+                      </td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap text-success font-medium">
+                        {shift.checkIn
+                          ? new Date(shift.checkIn).toLocaleTimeString("en-GB", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: "UTC",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap text-destructive font-medium">
+                        {shift.checkOut
+                          ? new Date(shift.checkOut).toLocaleTimeString("en-GB", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              timeZone: "UTC",
+                            })
+                          : "—"}
+                      </td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap font-medium">
+                        {shift.checkIn && shift.checkOut
+                          ? (() => {
+                              const mins = Math.round(
+                                (new Date(shift.checkOut).getTime() - new Date(shift.checkIn).getTime()) / 60000,
+                              );
+                              const h = Math.floor(mins / 60);
+                              const m = mins % 60;
+                              return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+                            })()
+                          : "—"}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-2 py-2 border-r border-border whitespace-nowrap",
+                          shift.staff === "Unassigned Shifts" ? "text-destructive font-medium" : "text-foreground",
+                        )}
+                      >
+                        {shift.staff === "Unassigned Shifts" ? "Unallocated" : shift.staff}
+                      </td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">
+                        {service.length > 22 ? service.slice(0, 22) + "..." : service}
+                      </td>
+                      <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
+                      <td className="px-2 py-2 border-r border-border text-muted-foreground">—</td>
+                      <td className="px-2 py-2 border-r border-border whitespace-nowrap">Week {shift.week ?? 1}</td>
+                      <td className="px-2 py-2 whitespace-nowrap text-muted-foreground">{shift.weekNo ?? 17}</td>
+                    </tr>
+                    <tr className="bg-background">
+                      <td className="px-2 py-2 border-r border-border" colSpan={1}>
+                        <div className="font-semibold">{shift.schedHours ?? fmtTime(shift.end - shift.start)}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Sched hrs</div>
+                      </td>
+                      <td className="px-2 py-2 border-r border-border" colSpan={1}>
+                        <div className="font-semibold">{shift.clockHours ?? "00:00"}</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">Clock hrs</div>
+                      </td>
+                      <td colSpan={19}></td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            {/* Form panel */}
-            <div className="col-span-12 md:col-span-9 p-6">
-              {active === "edit" && (
-                <div className="max-w-2xl mx-auto">
-                  <h3 className="text-base font-semibold text-foreground mb-5 text-center">
-                    Edit Rota Details
-                  </h3>
-                  <div className={cn("space-y-3.5", readOnly && "pointer-events-none opacity-70 select-none")}>
-                    <FormRow label="Service" required>
-                      <Select value={service} onValueChange={setService}>
-                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[
-                            "WCC - Lunch Call (Z4-T3)",
-                            "WCC - Morning",
-                            "WCC - Tea Call",
-                            "WCC - Bedtime",
-                            "CHC - Morning Call",
-                            "Private - Live-in Care (Basic)",
-                          ].map((opt) => (
-                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                          ))}
-                          {service && ![
-                            "WCC - Lunch Call (Z4-T3)",
-                            "WCC - Morning",
-                            "WCC - Tea Call",
-                            "WCC - Bedtime",
-                            "CHC - Morning Call",
-                            "Private - Live-in Care (Basic)",
-                          ].includes(service) && (
-                            <SelectItem value={service}>{service}</SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </FormRow>
-
-                    <FormRow label="Rota Type" required>
-                      <Select value={rotaType} onValueChange={setRotaType}>
-                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Normal">Normal</SelectItem>
-                          <SelectItem value="Cover">Cover</SelectItem>
-                          <SelectItem value="Shadow">Shadow</SelectItem>
-                          <SelectItem value="Training">Training</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormRow>
-
-                    <FormRow label="Date" required>
-                      <Input
-                        value={dateStr}
-                        onChange={(e) => setDateStr(e.target.value)}
-                        className="h-9 text-xs bg-muted/50"
-                        readOnly
-                      />
-                    </FormRow>
-
-                    <FormRow label="Start" required>
-                      <div className="flex items-center gap-2">
-                        <Select value={startH} onValueChange={setStartH}>
-                          <SelectTrigger className="h-9 text-xs w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <span className="text-foreground font-semibold">:</span>
-                        <Select value={startM} onValueChange={setStartM}>
-                          <SelectTrigger className="h-9 text-xs w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>{mins.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                    </FormRow>
-
-                    <FormRow label="End" required>
-                      <div className="flex items-center gap-2">
-                        <Select value={endH} onValueChange={setEndH}>
-                          <SelectTrigger className="h-9 text-xs w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <span className="text-foreground font-semibold">:</span>
-                        <Select value={endM} onValueChange={setEndM}>
-                          <SelectTrigger className="h-9 text-xs w-20"><SelectValue /></SelectTrigger>
-                          <SelectContent>{mins.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                    </FormRow>
-
-                    <FormRow label="Link" required>
-                      <YesNoSelect value={link} onChange={setLink} />
-                    </FormRow>
-
-                    <FormRow label="Alert?" required>
-                      <YesNoSelect value={alert} onChange={setAlert} />
-                    </FormRow>
-
-                    <FormRow label="Task Call?">
-                      <YesNoSelect value={taskCall} onChange={setTaskCall} />
-                    </FormRow>
-
-                    <FormRow label="Tasks">
-                      <Select value={tasks} onValueChange={setTasks}>
-                        <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Lunchtime">Lunchtime</SelectItem>
-                          <SelectItem value="Morning">Morning</SelectItem>
-                          <SelectItem value="Teatime">Teatime</SelectItem>
-                          <SelectItem value="Bedtime">Bedtime</SelectItem>
-                          <SelectItem value="None">None</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </FormRow>
-
-                    <FormRow label="Med Call?">
-                      <YesNoSelect value={medCall} onChange={setMedCall} />
-                    </FormRow>
-                  </div>
-
-                  {!readOnly && (
-                    <div className="flex justify-center mt-7">
-                      <Button onClick={handleSave} className="h-8 px-6 text-xs">
-                        Update Shift
-                      </Button>
-                    </div>
-                  )}
+            {/* Body: tabs + form */}
+            <div className="grid grid-cols-12 gap-0">
+              {/* Side tabs */}
+              <div className="col-span-12 md:col-span-3 border-r border-border bg-muted/20">
+                <div className="py-2">
+                  {visibleTabs.map((t) => {
+                    const Icon = t.icon;
+                    const isActive = active === t.id;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          if (t.id === "service-user") {
+                            goToServiceMember();
+                            return;
+                          }
+                          setActive(t.id);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-left transition-colors border-l-2",
+                          isActive
+                            ? "bg-card border-primary text-primary"
+                            : "border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        )}
+                      >
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{t.label}</span>
+                        {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
 
-              {active === "edit-staff" && (
-                <PlaceholderPanel
-                  title="Edit Staff with Visual"
-                  description="Visual staff allocation with availability heatmap. Pick a care giver by viewing their schedule and skills side-by-side."
-                  cta="Open Visual Allocator"
-                />
-              )}
+              {/* Form panel */}
+              <div className="col-span-12 md:col-span-9 p-6">
+                {active === "edit" && (
+                  <div className="max-w-2xl mx-auto">
+                    <h3 className="text-base font-semibold text-foreground mb-5 text-center">Edit Rota Details</h3>
+                    <div className={cn("space-y-3.5", readOnly && "pointer-events-none opacity-70 select-none")}>
+                      <FormRow label="Service" required>
+                        <Select value={service} onValueChange={setService} disabled={readOnly}>
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[
+                              "WCC - Lunch Call (Z4-T3)",
+                              "WCC - Morning",
+                              "WCC - Tea Call",
+                              "WCC - Bedtime",
+                              "CHC - Morning Call",
+                              "Private - Live-in Care (Basic)",
+                            ].map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                            {service &&
+                              ![
+                                "WCC - Lunch Call (Z4-T3)",
+                                "WCC - Morning",
+                                "WCC - Tea Call",
+                                "WCC - Bedtime",
+                                "CHC - Morning Call",
+                                "Private - Live-in Care (Basic)",
+                              ].includes(service) && <SelectItem value={service}>{service}</SelectItem>}
+                          </SelectContent>
+                        </Select>
+                      </FormRow>
 
-              {active === "service-user" && (
-                <PlaceholderPanel
-                  title="Service Member Profile"
-                  description={`Open ${shift.client}'s full profile to view care plans, key contacts, MAR chart and visit history.`}
-                  cta="Go to Profile"
-                />
-              )}
+                      <FormRow label="Rota Type" required>
+                        <Select value={rotaType} onValueChange={setRotaType} disabled={readOnly}>
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Normal">Normal</SelectItem>
+                            <SelectItem value="Cover">Cover</SelectItem>
+                            <SelectItem value="Shadow">Shadow</SelectItem>
+                            <SelectItem value="Training">Training</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormRow>
 
-              {active === "manual-in" && (
-                <ManualClockPanel
-                  type="in"
-                  defaultTime={fmtTime(shift.start)}
-                  onConfirm={() => { toast.success("Manual clock in recorded"); onOpenChange(false); }}
-                />
-              )}
+                      <FormRow label="Date" required>
+                        <Input
+                          value={dateStr}
+                          onChange={(e) => setDateStr(e.target.value)}
+                          className="h-9 text-xs bg-muted/50"
+                          readOnly
+                        />
+                      </FormRow>
 
-              {active === "manual-out" && (
-                <ManualClockPanel
-                  type="out"
-                  defaultTime={fmtTime(shift.end)}
-                  onConfirm={() => { toast.success("Manual clock out recorded"); onOpenChange(false); }}
-                />
-              )}
+                      <FormRow label="Start" required>
+                        <div className="flex items-center gap-2">
+                          <Select value={startH} onValueChange={setStartH} disabled={readOnly}>
+                            <SelectTrigger className="h-9 text-xs w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {hours.map((h) => (
+                                <SelectItem key={h} value={h}>
+                                  {h}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span className="text-foreground font-semibold">:</span>
+                          <Select value={startM} onValueChange={setStartM} disabled={readOnly}>
+                            <SelectTrigger className="h-9 text-xs w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {mins.map((m) => (
+                                <SelectItem key={m} value={m}>
+                                  {m}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </FormRow>
 
-              {active === "notes" && (
-                <NotesPanel onSave={() => { toast.success("Note saved"); }} />
-              )}
+                      <FormRow label="End" required>
+                        <div className="flex items-center gap-2">
+                          <Select value={endH} onValueChange={setEndH} disabled={readOnly}>
+                            <SelectTrigger className="h-9 text-xs w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {hours.map((h) => (
+                                <SelectItem key={h} value={h}>
+                                  {h}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span className="text-foreground font-semibold">:</span>
+                          <Select value={endM} onValueChange={setEndM} disabled={readOnly}>
+                            <SelectTrigger className="h-9 text-xs w-20">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {mins.map((m) => (
+                                <SelectItem key={m} value={m}>
+                                  {m}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </FormRow>
 
-              {active === "tasks" && (
-                <TasksPanel />
-              )}
+                      <FormRow label="Link" required>
+                        <YesNoSelect value={link} onChange={setLink} />
+                      </FormRow>
 
-              {active === "medication" && (
-                <MedicationPanel shift={shift} />
-              )}
+                      <FormRow label="Alert?" required>
+                        <YesNoSelect value={alert} onChange={setAlert} />
+                      </FormRow>
 
-              {active === "shadows" && (
-                <PlaceholderPanel
-                  title="Shadows"
-                  description="Add shadow care givers assigned to observe this visit."
-                  cta="Add Shadow"
-                />
-              )}
+                      <FormRow label="Task Call?">
+                        <YesNoSelect value={taskCall} onChange={setTaskCall} />
+                      </FormRow>
 
-              {active === "locks" && (
-                <PlaceholderPanel
-                  title="Locks"
-                  description="Lock this shift to prevent further changes from auto-rota or other planners."
-                  cta="Lock Shift"
-                />
-              )}
+                      <FormRow label="Tasks">
+                        <Select value={tasks} onValueChange={setTasks} disabled={readOnly}>
+                          <SelectTrigger className="h-9 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Lunchtime">Lunchtime</SelectItem>
+                            <SelectItem value="Morning">Morning</SelectItem>
+                            <SelectItem value="Teatime">Teatime</SelectItem>
+                            <SelectItem value="Bedtime">Bedtime</SelectItem>
+                            <SelectItem value="None">None</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormRow>
+
+                      <FormRow label="Med Call?">
+                        <YesNoSelect value={medCall} onChange={setMedCall} />
+                      </FormRow>
+                    </div>
+
+                    {!readOnly && (
+                      <div className="flex justify-center mt-7">
+                        <Button onClick={handleSave} className="h-8 px-6 text-xs">
+                          Update Shift
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {active === "service-user" && (
+                  <PlaceholderPanel
+                    title="Service Member Profile"
+                    description={`Open ${shift.client}'s full profile to view care plans, key contacts, MAR chart and visit history.`}
+                    cta="Go to Profile"
+                  />
+                )}
+
+                {active === "manual-in" && (
+                  <ManualClockPanel
+                    type="in"
+                    defaultTime={fmtTime(shift.start)}
+                    onConfirm={() => {
+                      toast.success("Manual clock in recorded");
+                      onOpenChange(false);
+                    }}
+                  />
+                )}
+
+                {active === "manual-out" && (
+                  <ManualClockPanel
+                    type="out"
+                    defaultTime={fmtTime(shift.end)}
+                    onConfirm={() => {
+                      toast.success("Manual clock out recorded");
+                      onOpenChange(false);
+                    }}
+                  />
+                )}
+
+                {active === "tasks" && <LiveTasksPanel visitId={shift.id} />}
+
+                {active === "medication" && <LiveMedicationPanel visitId={shift.id} />}
+
+
+
+                {active === "shadows" && (
+                  <PlaceholderPanel
+                    title="Shadows"
+                    description="Add shadow care givers assigned to observe this visit."
+                    cta="Add Shadow"
+                  />
+                )}
+
+                {active === "locks" && (
+                  <PlaceholderPanel
+                    title="Locks"
+                    description="Lock this shift to prevent further changes from auto-rota or other planners."
+                    cta="Lock Shift"
+                  />
+                )}
+              </div>
             </div>
-          </div>
           </fieldset>
         </div>
+        </DialogContent>
+      </Dialog>
 
-      </DialogContent>
-    </Dialog>
+      <AlertDialog
+        open={!!pendingCriticalAction}
+        onOpenChange={(open) => {
+          if (!open) setPendingCriticalAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingCriticalAction?.title}</AlertDialogTitle>
+            <AlertDialogDescription>{pendingCriticalAction?.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                pendingCriticalAction?.onConfirm();
+                setPendingCriticalAction(null);
+              }}
+            >
+              {pendingCriticalAction?.actionLabel ?? "Confirm"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -550,7 +670,9 @@ function FormRow({ label, required, children }: { label: string; required?: bool
 function YesNoSelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
+      <SelectTrigger className="h-9 text-xs">
+        <SelectValue />
+      </SelectTrigger>
       <SelectContent>
         <SelectItem value="Yes">Yes</SelectItem>
         <SelectItem value="No">No</SelectItem>
@@ -564,12 +686,22 @@ function PlaceholderPanel({ title, description, cta }: { title: string; descript
     <div className="max-w-md mx-auto text-center py-8">
       <h3 className="text-base font-semibold text-foreground mb-2">{title}</h3>
       <p className="text-xs text-muted-foreground mb-6">{description}</p>
-      <Button size="sm" onClick={() => toast.info(`${cta} - coming soon`)}>{cta}</Button>
+      <Button size="sm" onClick={() => toast.info(`${cta} - coming soon`)}>
+        {cta}
+      </Button>
     </div>
   );
 }
 
-function ManualClockPanel({ type, defaultTime, onConfirm }: { type: "in" | "out"; defaultTime: string; onConfirm: () => void }) {
+function ManualClockPanel({
+  type,
+  defaultTime,
+  onConfirm,
+}: {
+  type: "in" | "out";
+  defaultTime: string;
+  onConfirm: () => void;
+}) {
   const [time, setTime] = useState(defaultTime);
   const [reason, setReason] = useState("");
   return (
@@ -582,11 +714,18 @@ function ManualClockPanel({ type, defaultTime, onConfirm }: { type: "in" | "out"
           <Input value={time} onChange={(e) => setTime(e.target.value)} className="h-9 text-xs" />
         </FormRow>
         <FormRow label="Reason" required>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} className="text-xs min-h-[80px]" placeholder="e.g. Network outage, app fault" />
+          <Textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="text-xs min-h-[80px]"
+            placeholder="e.g. Network outage, app fault"
+          />
         </FormRow>
       </div>
       <div className="flex justify-center mt-7">
-        <Button onClick={onConfirm} className="h-8 px-6 text-xs">Confirm</Button>
+        <Button onClick={onConfirm} className="h-8 px-6 text-xs">
+          Confirm
+        </Button>
       </div>
     </div>
   );
@@ -597,9 +736,16 @@ function NotesPanel({ onSave }: { onSave: () => void }) {
   return (
     <div className="max-w-2xl mx-auto">
       <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Notes</h3>
-      <Textarea value={note} onChange={(e) => setNote(e.target.value)} className="text-xs min-h-[180px]" placeholder="Add a note about this visit..." />
+      <Textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="text-xs min-h-[180px]"
+        placeholder="Add a note about this visit..."
+      />
       <div className="flex justify-center mt-5">
-        <Button onClick={onSave} className="h-8 px-6 text-xs">Save Note</Button>
+        <Button onClick={onSave} className="h-8 px-6 text-xs">
+          Save Note
+        </Button>
       </div>
     </div>
   );
@@ -617,11 +763,14 @@ function TasksPanel() {
       <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Tasks</h3>
       <div className="space-y-2">
         {items.map((t) => (
-          <label key={t.id} className="flex items-center gap-3 p-2.5 rounded border border-border hover:bg-muted/40 cursor-pointer text-xs">
+          <label
+            key={t.id}
+            className="flex items-center gap-3 p-2.5 rounded border border-border hover:bg-muted/40 cursor-pointer text-xs"
+          >
             <input
               type="checkbox"
               checked={t.done}
-              onChange={(e) => setItems(items.map(i => i.id === t.id ? { ...i, done: e.target.checked } : i))}
+              onChange={(e) => setItems(items.map((i) => (i.id === t.id ? { ...i, done: e.target.checked } : i)))}
               className="h-4 w-4 rounded border-border accent-primary"
             />
             <span className={cn("flex-1", t.done && "line-through text-muted-foreground")}>{t.label}</span>
@@ -684,9 +833,8 @@ function MedicationPanel({ shift }: { shift: EditRotaShift }) {
   const [page, setPage] = useState(1);
   const PER_PAGE = 5;
 
-  const filtered = meds.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.status.toLowerCase().includes(search.toLowerCase()),
+  const filtered = meds.filter(
+    (m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.status.toLowerCase().includes(search.toLowerCase()),
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const pageRows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -774,7 +922,11 @@ function MedicationPanel({ shift }: { shift: EditRotaShift }) {
               <SelectItem value="Warfarin 3mg">Warfarin 3mg</SelectItem>
             </SelectContent>
           </Select>
-          <Button size="sm" className="h-8 px-3 bg-success hover:bg-success/90 text-success-foreground text-xs" onClick={addMed}>
+          <Button
+            size="sm"
+            className="h-8 px-3 bg-success hover:bg-success/90 text-success-foreground text-xs"
+            onClick={addMed}
+          >
             Go
           </Button>
           {selected.size > 0 && (
@@ -787,7 +939,10 @@ function MedicationPanel({ shift }: { shift: EditRotaShift }) {
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             placeholder="Search:"
             className="h-8 pl-7 text-xs"
           />
@@ -827,21 +982,20 @@ function MedicationPanel({ shift }: { shift: EditRotaShift }) {
                 pageRows.map((m) => (
                   <tr key={m.id} className="border-b border-border last:border-b-0 hover:bg-muted/20 align-top">
                     <td className="px-2 py-3">
-                      <Checkbox
-                        checked={selected.has(m.id)}
-                        onCheckedChange={() => toggleSelect(m.id)}
-                      />
+                      <Checkbox checked={selected.has(m.id)} onCheckedChange={() => toggleSelect(m.id)} />
                     </td>
                     <td className="px-2 py-3 font-semibold text-foreground whitespace-nowrap">{m.name}</td>
                     <td className="px-2 py-3">
                       <Select value={m.status} onValueChange={(v) => setStatus(m.id, v as MedStatus)}>
-                        <SelectTrigger className={cn(
-                          "h-7 text-[11px] w-28 border",
-                          m.status === "Complete" && "text-success border-success/40",
-                          m.status === "Refused" && "text-destructive border-destructive/40",
-                          m.status === "Not Given" && "text-warning border-warning/40",
-                          m.status === "Pending" && "text-muted-foreground",
-                        )}>
+                        <SelectTrigger
+                          className={cn(
+                            "h-7 text-[11px] w-28 border",
+                            m.status === "Complete" && "text-success border-success/40",
+                            m.status === "Refused" && "text-destructive border-destructive/40",
+                            m.status === "Not Given" && "text-warning border-warning/40",
+                            m.status === "Pending" && "text-muted-foreground",
+                          )}
+                        >
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -884,7 +1038,9 @@ function MedicationPanel({ shift }: { shift: EditRotaShift }) {
                       {m.linkedAreas.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {m.linkedAreas.map((a) => (
-                            <Badge key={a} variant="outline" className="text-[10px]">{a}</Badge>
+                            <Badge key={a} variant="outline" className="text-[10px]">
+                              {a}
+                            </Badge>
                           ))}
                         </div>
                       ) : (
@@ -910,19 +1066,26 @@ function MedicationPanel({ shift }: { shift: EditRotaShift }) {
         {/* Footer */}
         <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/30 text-xs text-muted-foreground">
           <div>
-            Showing {filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1} to {Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
+            Showing {filtered.length === 0 ? 0 : (page - 1) * PER_PAGE + 1} to{" "}
+            {Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
           </div>
           <div className="flex items-center gap-1">
             <Button
-              variant="outline" size="icon" className="h-7 w-7"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
               disabled={page === 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
-            <span className="px-2">Page {page} / {totalPages}</span>
+            <span className="px-2">
+              Page {page} / {totalPages}
+            </span>
             <Button
-              variant="outline" size="icon" className="h-7 w-7"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
@@ -943,11 +1106,18 @@ function SignatureSvg({ seed }: { seed: string }) {
     <svg width="120" height="40" viewBox="0 0 120 40" className="text-foreground">
       <path
         d={`M5 ${22 + r(0)} C 20 ${5 + r(2)}, 35 ${35 + r(4)}, 55 ${20 + r(6)} S 95 ${8 + r(8)}, 115 ${28 + r(10)}`}
-        fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
       />
       <path
         d={`M30 ${30 + r(1)} q 12 -12 28 0 t 28 -2`}
-        fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        opacity="0.7"
       />
     </svg>
   );
@@ -1021,7 +1191,12 @@ function seedMeds(shift: EditRotaShift, slot: string): MedRow[] {
         signature: true,
       },
       linkedAreas: ["Cardiac"],
-      planned: { method: "Oral", pre: "1", post: "0", instructions: "Take one tablet at the same time each day. Swallow whole with water." },
+      planned: {
+        method: "Oral",
+        pre: "1",
+        post: "0",
+        instructions: "Take one tablet at the same time each day. Swallow whole with water.",
+      },
       bodyMap: "—",
     });
   }
@@ -1046,7 +1221,12 @@ function seedMeds(shift: EditRotaShift, slot: string): MedRow[] {
         signature: true,
       },
       linkedAreas: ["PRN", "Pain"],
-      planned: { method: "Oral", pre: "2", post: "0", instructions: "Up to 2 tablets every 4–6 hours. Maximum 8 tablets in 24 hours." },
+      planned: {
+        method: "Oral",
+        pre: "2",
+        post: "0",
+        instructions: "Up to 2 tablets every 4–6 hours. Maximum 8 tablets in 24 hours.",
+      },
       bodyMap: "—",
     });
   }
@@ -1056,4 +1236,196 @@ function seedMeds(shift: EditRotaShift, slot: string): MedRow[] {
 
 function pickFromList<T>(seed: number, arr: T[]): T {
   return arr[Math.abs(seed) % arr.length];
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Live Tasks Panel — fetches shift_task_medician for this visit (realtime)   */
+/* -------------------------------------------------------------------------- */
+
+function LiveTasksPanel({ visitId }: { visitId: string }) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(visitId);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isUuid) { setLoading(false); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("shift_task_medician" as any)
+        .select("id,title,is_completed,completed_by,completed_at,notes,medication_id,medication")
+        .eq("daily_visit_id", visitId)
+        .is("medication_id", null)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      if (error) toast.error("Failed to load tasks");
+      setRows((data || []).filter((r: any) => !r.medication));
+      setLoading(false);
+    };
+    load();
+    let channel: any;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      channel = supabase
+        .channel(`tasks-${visitId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "shift_task_medician", filter: `daily_visit_id=eq.${visitId}` }, load)
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      (async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        if (channel) supabase.removeChannel(channel);
+      })();
+    };
+  }, [visitId, isUuid]);
+
+  const toggle = async (row: any) => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const next = !row.is_completed;
+    const { error } = await supabase
+      .from("shift_task_medician" as any)
+      .update({ is_completed: next, completed_at: next ? new Date().toISOString() : null })
+      .eq("id", row.id);
+    if (error) toast.error("Update failed");
+  };
+
+  if (!isUuid) {
+    return <div className="max-w-md mx-auto py-8 text-center text-xs text-muted-foreground">Tasks are available once this shift is saved to the database.</div>;
+  }
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Tasks</h3>
+      {loading ? (
+        <p className="text-xs text-muted-foreground text-center py-3">Loading tasks…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-3">No tasks assigned to this shift.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((t) => (
+            <div key={t.id} className="flex items-start gap-3 p-3 rounded border border-border bg-card">
+              <input
+                type="checkbox"
+                checked={!!t.is_completed}
+                onChange={() => toggle(t)}
+                className="h-4 w-4 mt-0.5 rounded border-border accent-primary cursor-pointer"
+              />
+              <div className="flex-1 min-w-0">
+                <div className={cn("text-xs font-medium", t.is_completed && "line-through text-muted-foreground")}>
+                  {t.title}
+                </div>
+                {t.notes && <div className="text-[11px] text-muted-foreground mt-0.5">{t.notes}</div>}
+                {t.is_completed && t.completed_at && (
+                  <div className="text-[10px] text-success mt-1">
+                    Completed {t.completed_by ? `by ${t.completed_by} ` : ""}{new Date(t.completed_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Live Medication Panel — fetches shift_task_medician (meds) for this visit  */
+/* -------------------------------------------------------------------------- */
+
+function LiveMedicationPanel({ visitId }: { visitId: string }) {
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(visitId);
+  const [rows, setRows] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isUuid) { setLoading(false); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data, error } = await supabase
+        .from("shift_task_medician" as any)
+        .select("id,title,medication,dosage,is_completed,completed_by,completed_at,notes,medication_id")
+        .eq("daily_visit_id", visitId)
+        .order("created_at", { ascending: true });
+      if (cancelled) return;
+      if (error) toast.error("Failed to load medications");
+      setRows((data || []).filter((r: any) => r.medication_id || r.medication));
+      setLoading(false);
+    };
+    load();
+    let channel: any;
+    (async () => {
+      const { supabase } = await import("@/integrations/supabase/client");
+      channel = supabase
+        .channel(`meds-${visitId}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "shift_task_medician", filter: `daily_visit_id=eq.${visitId}` }, load)
+        .subscribe();
+    })();
+    return () => {
+      cancelled = true;
+      (async () => {
+        const { supabase } = await import("@/integrations/supabase/client");
+        if (channel) supabase.removeChannel(channel);
+      })();
+    };
+  }, [visitId, isUuid]);
+
+  const toggle = async (row: any) => {
+    const { supabase } = await import("@/integrations/supabase/client");
+    const next = !row.is_completed;
+    const { error } = await supabase
+      .from("shift_task_medician" as any)
+      .update({ is_completed: next, completed_at: next ? new Date().toISOString() : null })
+      .eq("id", row.id);
+    if (error) toast.error("Update failed");
+  };
+
+  if (!isUuid) {
+    return <div className="max-w-md mx-auto py-8 text-center text-xs text-muted-foreground">Medication is available once this shift is saved to the database.</div>;
+  }
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <h3 className="text-base font-semibold text-foreground mb-5 text-center">Visit Medication</h3>
+      {loading ? (
+        <p className="text-xs text-muted-foreground text-center py-3">Loading medication…</p>
+      ) : rows.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-3">No medication scheduled for this shift.</p>
+      ) : (
+        <div className="space-y-2">
+          {rows.map((m) => (
+            <div key={m.id} className="flex items-start gap-3 p-3 rounded border border-border bg-card">
+              <input
+                type="checkbox"
+                checked={!!m.is_completed}
+                onChange={() => toggle(m)}
+                className="h-4 w-4 mt-0.5 rounded border-border accent-primary cursor-pointer"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={cn("text-xs font-semibold", m.is_completed && "line-through text-muted-foreground")}>
+                    {m.medication || m.title}
+                  </span>
+                  {m.dosage && (
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                      {m.dosage}
+                    </span>
+                  )}
+                </div>
+                {m.notes && <div className="text-[11px] text-muted-foreground mt-0.5">{m.notes}</div>}
+                {m.is_completed && m.completed_at && (
+                  <div className="text-[10px] text-success mt-1">
+                    Administered {m.completed_by ? `by ${m.completed_by} ` : ""}{new Date(m.completed_at).toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }

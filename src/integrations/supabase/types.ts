@@ -1440,16 +1440,22 @@ export type Database = {
       }
       daily_visits: {
         Row: {
+          alarm_code: string | null
+          alarm_instructions: string | null
           care_giver_id: string | null
           care_receiver_id: string | null
           check_in_lat: number | null
           check_in_lng: number | null
           check_in_time: string | null
           check_out_time: string | null
+          clockin_method: string | null
           company_id: string
           created_at: string
           duration: number
           duration_minutes: number | null
+          entry_code: string | null
+          entry_code_updated_at: string | null
+          entry_instructions: string | null
           id: string
           start_hour: number
           start_minute: number
@@ -1458,16 +1464,22 @@ export type Database = {
           visit_date: string
         }
         Insert: {
+          alarm_code?: string | null
+          alarm_instructions?: string | null
           care_giver_id?: string | null
           care_receiver_id?: string | null
           check_in_lat?: number | null
           check_in_lng?: number | null
           check_in_time?: string | null
           check_out_time?: string | null
+          clockin_method?: string | null
           company_id?: string
           created_at?: string
           duration?: number
           duration_minutes?: number | null
+          entry_code?: string | null
+          entry_code_updated_at?: string | null
+          entry_instructions?: string | null
           id?: string
           start_hour?: number
           start_minute?: number
@@ -1476,16 +1488,22 @@ export type Database = {
           visit_date?: string
         }
         Update: {
+          alarm_code?: string | null
+          alarm_instructions?: string | null
           care_giver_id?: string | null
           care_receiver_id?: string | null
           check_in_lat?: number | null
           check_in_lng?: number | null
           check_in_time?: string | null
           check_out_time?: string | null
+          clockin_method?: string | null
           company_id?: string
           created_at?: string
           duration?: number
           duration_minutes?: number | null
+          entry_code?: string | null
+          entry_code_updated_at?: string | null
+          entry_instructions?: string | null
           id?: string
           start_hour?: number
           start_minute?: number
@@ -2372,6 +2390,7 @@ export type Database = {
           is_completed: boolean
           medication: string | null
           medication_id: string | null
+          notes: string | null
           title: string
         }
         Insert: {
@@ -2385,6 +2404,7 @@ export type Database = {
           is_completed?: boolean
           medication?: string | null
           medication_id?: string | null
+          notes?: string | null
           title: string
         }
         Update: {
@@ -2398,6 +2418,7 @@ export type Database = {
           is_completed?: boolean
           medication?: string | null
           medication_id?: string | null
+          notes?: string | null
           title?: string
         }
         Relationships: [
