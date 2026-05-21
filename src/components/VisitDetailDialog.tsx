@@ -87,6 +87,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   const qc = useQueryClient();
   const updateDailyVisit = useUpdateDailyVisit();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [medNotes, setMedNotes] = useState<MedicationRecord[]>([]);
   const [locks, setLocks] = useState<RotaLock[]>([]);
   const [shadow, setShadow] = useState<any[]>([]);
   const [editOpen, setEditOpen] = useState(false);
@@ -158,7 +159,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
       merged.push({
         id: n.id,
         ref: n.id.slice(0, 8).toUpperCase(),
-        tags: [],
+        tags: ["Shift Note"],
         author: n.author === visit.caregiver?.id ? (visit.caregiver?.name || n.author) : n.author,
         text: n.note,
         hidden: false,
@@ -172,7 +173,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
       merged.push({
         id: vn.id,
         ref: vn.id.slice(0, 8).toUpperCase(),
-        tags: [],
+        tags: ["Visit Note"],
         author: vn.caregiver,
         text: vn.note,
         hidden: false,
@@ -698,7 +699,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                 <p className="text-[11px] text-muted-foreground mb-2">
                   Notes marked as hidden will only appear on a single rota, service member and care giver note area or some of the reports. Notes marked as hidden will also not appear on the Care Portal section.
                 </p>
-                {notes.length === 0 ? (
+                {notes.length === 0 && medNotes.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-3">No notes added.</p>
                 ) : (
                   <Card className="border border-border overflow-hidden">
@@ -726,9 +727,22 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                                     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400">
                                       Private
                                     </span>
-                                  ) : (
-                                    (n.tags || []).join(", ")
-                                  )}
+                                  ) : (n.tags || []).length > 0 ? (
+                                    <div className="flex flex-wrap gap-1">
+                                      {(n.tags || []).map((tag: string) => {
+                                        const tagStyles: Record<string, string> = {
+                                          "Shift Note": "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400",
+                                          "Visit Note": "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400",
+                                          "Private": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400",
+                                        };
+                                        return (
+                                          <span key={tag} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${tagStyles[tag] ?? "bg-muted text-muted-foreground"}`}>
+                                            {tag}
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
                                 </td>
                                 <td className="p-1.5 border-r border-border text-[11px] font-medium">{n.text}</td>
                                 <td className="p-1.5 border-r border-border text-[11px]">{n.author}</td>
@@ -736,11 +750,46 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                               </tr>
                             );
                           })}
+                          {/* Medication notes injected from Medication Feed */}
+                          {(() => {
+                            const seenNotes = new Set<string>();
+                            return medNotes
+                              .filter((m) => {
+                                const t = (m.notes || "").trim();
+                                if (!t || seenNotes.has(t)) return false;
+                                seenNotes.add(t);
+                                return true;
+                              })
+                              .map((m, i) => (
+                                <tr key={`med-${m.id}`} className={`border-b border-border ${(notes.length + i) % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
+                                  <td className="p-1.5 border-r border-border text-center"><input type="checkbox" /></td>
+                                  <td className="p-1.5 border-r border-border font-mono text-[11px] text-muted-foreground">—</td>
+                                  <td className="p-1.5 border-r border-border">
+                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary">
+                                      Medication
+                                    </span>
+                                  </td>
+                                  <td className="p-1.5 border-r border-border text-[11px] font-medium">{m.notes}</td>
+                                  <td className="p-1.5 border-r border-border text-[11px]">—</td>
+                                  <td className="p-1.5 text-[11px]">Yes</td>
+                                </tr>
+                              ));
+                          })()}
                         </tbody>
                       </table>
                     </div>
                     <div className="px-3 py-2 text-[11px] text-muted-foreground border-t border-border">
-                      Showing 1 to {notes.length} of {notes.length}
+                      {(() => {
+                        const seenNotes = new Set<string>();
+                        const uniqueMedCount = medNotes.filter((m) => {
+                          const t = (m.notes || "").trim();
+                          if (!t || seenNotes.has(t)) return false;
+                          seenNotes.add(t);
+                          return true;
+                        }).length;
+                        const total = notes.length + uniqueMedCount;
+                        return `Showing 1 to ${total} of ${total}`;
+                      })()}
                     </div>
                   </Card>
                 )}
@@ -748,7 +797,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
 
               {/* ============== MEDICATION FEED ============== */}
               <section>
-                <MedicationFeed visitId={visit.id} />
+                <MedicationFeed visitId={visit.id} onMedsLoaded={setMedNotes} />
               </section>
 
               {/* ============== SHADOW SHIFTS ============== */}
@@ -1143,7 +1192,7 @@ interface MedicationRecord {
   created_at: string;
 }
 
-function MedicationFeed({ visitId }: { visitId: string }) {
+function MedicationFeed({ visitId, onMedsLoaded }: { visitId: string; onMedsLoaded?: (meds: MedicationRecord[]) => void }) {
   const [meds, setMeds] = useState<MedicationRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -1220,6 +1269,11 @@ function MedicationFeed({ visitId }: { visitId: string }) {
     return () => { cancelled = true; };
   }, [visitId]);
 
+  // Notify parent when meds are loaded
+  useEffect(() => {
+    if (!loading) onMedsLoaded?.(meds);
+  }, [meds, loading]);
+
   const { data: allCareGivers = [] } = useCareGivers();
   const getCgName = (id: string | null) => {
     if (!id) return "Unknown";
@@ -1243,34 +1297,16 @@ function MedicationFeed({ visitId }: { visitId: string }) {
       ) : meds.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-3">No medication recorded for this shift.</p>
       ) : (
-        <ol className="relative border-l-2 border-primary/20 ml-2 space-y-4 py-1">
+        <ol className="relative border-l-2 border-primary/20 ml-2 space-y-3 py-1">
           {meds.map((m) => (
             <li key={m.id} className="ml-4 relative">
               <span className="absolute -left-[22px] top-1 h-4 w-4 rounded-full bg-primary/15 border-2 border-primary flex items-center justify-center">
                 <Pill className="h-2 w-2 text-primary" />
               </span>
-              <div className="bg-muted/30 rounded-md border border-border p-3">
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-foreground">{m.medication}</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                      {m.dosage}
-                    </span>
-                    {m.time_of_day && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
-                        {m.time_of_day}
-                      </span>
-                    )}
-                  </div>
-
-                </div>
-                {m.notes && (
-                  <p className="text-[11px] text-muted-foreground mt-1.5 leading-relaxed">{m.notes}</p>
-                )}
-                {m.administered_by && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    Administered by <span className="font-medium text-foreground">{getCgName(m.administered_by)}</span>
-                  </p>
+              <div className="bg-muted/30 rounded-md border border-border px-3 py-2">
+                <span className="text-xs font-semibold text-foreground">{m.medication}</span>
+                {m.dosage && (
+                  <span className="text-[10px] font-mono ml-2 px-1.5 py-0.5 rounded bg-primary/10 text-primary">{m.dosage}</span>
                 )}
               </div>
             </li>

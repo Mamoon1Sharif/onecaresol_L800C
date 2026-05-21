@@ -126,7 +126,14 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
 
   const lateMins = getLateMins(v);
   const completedTasks = tasks.filter((t: any) => t.is_completed).length;
-  const careNotesCount = (medicationNotes as any[]).length;
+  const careNotesCount = (() => {
+    const seen = new Set<string>();
+    for (const m of medicationNotes as any[]) {
+      const note = (m.notes || "").trim();
+      if (note) seen.add(note);
+    }
+    return seen.size;
+  })();
 
   return (
     <>
@@ -298,25 +305,24 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
                   No medication notes recorded for this shift.
                 </div>
               ) : (
-                (medicationNotes as any[]).map((m: any) => (
-                  <div
-                    key={m.id}
-                    className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-primary text-xs">
-                        {m.medication || m.title}
-                      </span>
-                      {m.dosage && (
-                        <span className="text-[10px] text-muted-foreground">· {m.dosage}</span>
-                      )}
+                (() => {
+                  // Deduplicate: show only one entry per unique note text
+                  const seenNotes = new Set<string>();
+                  const unique = (medicationNotes as any[]).filter((m: any) => {
+                    const noteText = (m.notes || "").trim();
+                    if (!noteText || seenNotes.has(noteText)) return false;
+                    seenNotes.add(noteText);
+                    return true;
+                  });
+                  return unique.map((m: any) => (
+                    <div
+                      key={m.id}
+                      className="text-sm text-foreground bg-background rounded px-3 py-1.5 border border-border"
+                    >
+                      <p className="text-xs text-muted-foreground">{m.notes}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>
-                    {m.completed_by && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">by {getCgName(m.completed_by) || m.completed_by}</p>
-                    )}
-                  </div>
-                ))
+                  ));
+                })()
               )}
             </div>
           </TableCell>
