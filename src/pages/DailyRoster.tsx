@@ -534,7 +534,7 @@ const DailyRoster = () => {
                     <th className="p-2 border-r border-border text-center w-28"><IconCell icon={Map} label="Clock-in GPS location (lat, lng)" /></th>
                     <th className="p-2 border-r border-border text-left">Care Giver</th>
                     <th className="p-2 border-r border-border text-left">Service Call</th>
-                    <th className="p-2 border-r border-border text-center w-8"><IconCell icon={Tag} label="Service tag" /></th>
+                    <th className="p-2 border-r border-border text-center w-8"><IconCell icon={LogIn} label="Check-in login method" /></th>
                     <th className="p-2 border-r border-border text-center w-8"><IconCell icon={UserPlus} label="Double-up / shadow" /></th>
                     <th className="p-2 border-r border-border text-center w-8"><IconCell icon={Briefcase} label="Care pack required" /></th>
                     <th className="p-2 border-r border-border text-center w-8"><IconCell icon={FileText} label="Care notes recorded" /></th>
