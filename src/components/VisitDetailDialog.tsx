@@ -18,7 +18,7 @@ import {
   PoundSterling, Camera, ListChecks, XCircle, Trash2, X, CheckCircle2, Activity,
   LogIn, LogOut, PlayCircle, CircleDot, Pill, MessageSquare, StickyNote
 } from "lucide-react";
-import { useShiftNotes, useCaregiverPrivateNotes, useVisitNotesByShift, useCareGivers } from "@/hooks/use-care-data";
+import { useShiftNotes, useCaregiverPrivateNotes, useVisitNotesByShift, useCareGivers, useDirectPrivateNotes } from "@/hooks/use-care-data";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,6 +126,11 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
   const { data: dbShiftNotes = [] } = useShiftNotes(visit?.id);
   const { data: dbPrivateNotes = [] } = useCaregiverPrivateNotes(visit?.rawVisit);
   const { data: dbVisitNotes = [] } = useVisitNotesByShift(visit?.rawVisit);
+  const { data: dbDirectPrivateNotes = [] } = useDirectPrivateNotes(
+    visit?.rawVisit?.care_giver_id,
+    visit?.rawVisit?.care_receiver_id,
+    visit?.rawVisit?.visit_date
+  );
 
   useEffect(() => {
     if (!visit) return;
@@ -140,12 +145,29 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
     // Merge database notes with sample notes (if any)
     const merged: Note[] = [];
 
-    // Add private notes first
+    // Add private notes first (time-window filtered)
     dbPrivateNotes.forEach((pn: any) => {
       merged.push({
         id: pn.id,
-        ref: "PRIVATE",
-        tags: ["Private"],
+        ref: pn.id.slice(0, 8).toUpperCase(),
+        tags: ["Observation Notes"],
+        author: visit.teamMember || "Care Giver",
+        text: pn.note,
+        hidden: false,
+        createdAt: new Date(pn.created_at).toLocaleString("en-GB"),
+        visibleOnDevice: true
+      });
+    });
+
+    // Add direct private notes (no time-window filter) — skip duplicates
+    const existingIds = new Set(merged.map((n) => n.id));
+    dbDirectPrivateNotes.forEach((pn: any) => {
+      if (existingIds.has(pn.id)) return;
+      existingIds.add(pn.id);
+      merged.push({
+        id: pn.id,
+        ref: pn.id.slice(0, 8).toUpperCase(),
+        tags: ["Observation Notes"],
         author: visit.teamMember || "Care Giver",
         text: pn.note,
         hidden: false,
@@ -159,7 +181,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
       merged.push({
         id: n.id,
         ref: n.id.slice(0, 8).toUpperCase(),
-        tags: ["Shift Note"],
+        tags: ["Task Note"],
         author: n.author === visit.caregiver?.id ? (visit.caregiver?.name || n.author) : n.author,
         text: n.note,
         hidden: false,
@@ -196,7 +218,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
     }
 
     setNotes(merged);
-  }, [visit, dbShiftNotes, dbPrivateNotes, dbVisitNotes]);
+  }, [visit, dbShiftNotes, dbPrivateNotes, dbVisitNotes, dbDirectPrivateNotes]);
 
   if (!visit) return null;
 
@@ -606,17 +628,7 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                         alt={visit.teamMember}
                         className="h-28 w-28 rounded object-cover border border-border"
                       />
-                      <Button
-                        size="sm"
-                        disabled={isImmutable}
-                        className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs w-full gap-1.5"
-                        onClick={() => {
-                          if (guardImmutable()) return;
-                          setConfirmRemoveCaregiverOpen(true);
-                        }}
-                      >
-                        ↑ Remove Care Giver
-                      </Button>
+                     
                     </div>
                     <div className="flex-1 min-w-[240px]">
                       {visit.caregiver?.id || visit.caregiver_id ? (
@@ -717,23 +729,19 @@ export function VisitDetailDialog({ visit, open, onOpenChange }: Props) {
                         </thead>
                         <tbody>
                           {notes.map((n, i) => {
-                            const isPrivate = n.tags?.includes("Private");
+                            const isPrivate = n.tags?.includes("Observation Notes");
                             return (
                               <tr key={n.id} className={`border-b border-border ${isPrivate ? "bg-amber-50/50 dark:bg-amber-950/20" : (i % 2 === 0 ? "bg-background" : "bg-muted/20")}`}>
                                 <td className="p-1.5 border-r border-border text-center"><input type="checkbox" /></td>
                                 <td className="p-1.5 border-r border-border font-mono text-[11px] text-muted-foreground">{n.ref}</td>
                                 <td className="p-1.5 border-r border-border">
-                                  {isPrivate ? (
-                                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400">
-                                      Private
-                                    </span>
-                                  ) : (n.tags || []).length > 0 ? (
+                                  {(n.tags || []).length > 0 ? (
                                     <div className="flex flex-wrap gap-1">
                                       {(n.tags || []).map((tag: string) => {
                                         const tagStyles: Record<string, string> = {
-                                          "Shift Note": "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400",
-                                          "Visit Note": "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400",
-                                          "Private": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400",
+                                          "Observation Notes": "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400",
+                                          "Task Note":         "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-400",
+                                          "Visit Note":        "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400",
                                         };
                                         return (
                                           <span key={tag} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${tagStyles[tag] ?? "bg-muted text-muted-foreground"}`}>

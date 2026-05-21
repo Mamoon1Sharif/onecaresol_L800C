@@ -480,6 +480,25 @@ export function useCaregiverPrivateNotes(visit: any) {
   });
 }
 
+export function useDirectPrivateNotes(careGiverId: string | undefined, careReceiverId: string | undefined, visitDate: string | undefined) {
+  return useQuery({
+    queryKey: ["direct_private_notes", careGiverId, careReceiverId, visitDate],
+    enabled: !!careGiverId && !!careReceiverId && !!visitDate,
+    queryFn: async () => {
+      if (!careGiverId || !careReceiverId || !visitDate) return [];
+      const { data, error } = await supabase
+        .from("caregiver_private_notes")
+        .select("*")
+        .eq("care_giver_id", careGiverId)
+        .eq("service_user_id", careReceiverId)
+        .eq("note_date", visitDate)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
 export function useVisitNotesByShift(visit: any) {
   return useQuery({
     queryKey: ["visit_notes_by_shift", visit?.id],
