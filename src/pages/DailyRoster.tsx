@@ -19,7 +19,22 @@ import {
   TrendingUp, Clock, AlertCircle, Info, XCircle, MessageSquare,
   Plus, Eye, Plane, LayoutTemplate, ChevronDown, Tag, ArrowRight,
   CalendarDays, CalendarRange, Lock, Link2, Map, UserPlus, User,
+  MapPin, KeyRound, Nfc, QrCode, Fingerprint, Hand, LogIn,
 } from "lucide-react";
+
+// Map clockin_method values to an icon + label
+function getClockInMethodMeta(method?: string | null): { icon: any; label: string; className: string } | null {
+  if (!method) return null;
+  const m = method.toLowerCase().replace(/[\s_-]/g, "");
+  if (m.includes("location") || m.includes("gps")) return { icon: MapPin, label: "Location swipe check-in", className: "h-3.5 w-3.5 text-emerald-600" };
+  if (m.includes("pin")) return { icon: KeyRound, label: "PIN check-in", className: "h-3.5 w-3.5 text-amber-600" };
+  if (m.includes("nfc")) return { icon: Nfc, label: "NFC check-in", className: "h-3.5 w-3.5 text-purple-600" };
+  if (m.includes("qr")) return { icon: QrCode, label: "QR code check-in", className: "h-3.5 w-3.5 text-blue-600" };
+  if (m.includes("finger") || m.includes("bio")) return { icon: Fingerprint, label: "Biometric check-in", className: "h-3.5 w-3.5 text-pink-600" };
+  if (m.includes("photo") || m.includes("camera")) return { icon: Camera, label: "Photo check-in", className: "h-3.5 w-3.5 text-cyan-600" };
+  if (m.includes("manual")) return { icon: Hand, label: "Manual check-in", className: "h-3.5 w-3.5 text-orange-600" };
+  return { icon: LogIn, label: `Check-in: ${method}`, className: "h-3.5 w-3.5 text-muted-foreground" };
+}
 import { useDailyVisits, useCareGivers, useCareReceivers } from "@/hooks/use-care-data";
 import { supabase } from "@/integrations/supabase/client";
 import { RosterViewSwitcher } from "@/components/RosterViewSwitcher";
