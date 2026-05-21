@@ -339,6 +339,9 @@ export type Database = {
           id: string
           keysafe: string | null
           language: string | null
+          latitude: number | null
+          location_updated_at: string | null
+          longitude: number | null
           marital_status: string | null
           medical_company_number: string | null
           medical_password: string | null
@@ -420,6 +423,9 @@ export type Database = {
           id?: string
           keysafe?: string | null
           language?: string | null
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           marital_status?: string | null
           medical_company_number?: string | null
           medical_password?: string | null
@@ -501,6 +507,9 @@ export type Database = {
           id?: string
           keysafe?: string | null
           language?: string | null
+          latitude?: number | null
+          location_updated_at?: string | null
+          longitude?: number | null
           marital_status?: string | null
           medical_company_number?: string | null
           medical_password?: string | null
