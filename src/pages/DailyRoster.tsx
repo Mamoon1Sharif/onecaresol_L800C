@@ -222,6 +222,7 @@ const DailyRoster = () => {
         rawVisit: v,
         receiver: cr,
         caregiver: v.care_givers ?? null,
+        clockInMethod: (v as any).clockin_method ?? null,
       };
     });
 
