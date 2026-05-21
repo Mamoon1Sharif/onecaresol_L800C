@@ -42,6 +42,7 @@ import {
   useVisitNotesByShift,
   useVisitCareTaskNotes,
   useVisitMedicationNotes,
+  useCareGivers,
 } from "@/hooks/use-care-data";
 import { supabase } from "@/integrations/supabase/client";
 import { ShiftDetailDialog } from "@/components/ShiftDetailDialog";
@@ -105,6 +106,13 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
   const { data: rawTasks = [] } = useShiftTasks(v.id);
   const { data: careTaskNotes = [] } = useVisitCareTaskNotes(v);
   const { data: medicationNotes = [] } = useVisitMedicationNotes(v);
+  const { data: allCareGivers = [] } = useCareGivers();
+
+  const getCgName = (id: string | null) => {
+    if (!id) return null;
+    const cg = (allCareGivers as any[]).find((c: any) => c.id === id);
+    return cg?.name || null;
+  };
 
   // Dedup tasks by title for display
   const tasks = useMemo(() => {
@@ -211,7 +219,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
                       <span className="font-semibold text-primary text-xs">Shift Note:</span> {n.note}
                       {n.author && (
                         <span className="text-[10px] text-muted-foreground ml-2">
-                          by {n.author === v.care_giver_id ? (v.care_givers as any)?.name : n.author}
+                          by {n.author === v.care_giver_id ? (v.care_givers as any)?.name : (getCgName(n.author) || n.author)}
                         </span>
                       )}
                     </div>
@@ -268,7 +276,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
                     <span className={t.is_completed ? "text-foreground" : "text-muted-foreground"}>{t.title}</span>
                     {t.completed_by && (
                       <span className="text-xs text-muted-foreground ml-auto">
-                        by {t.completed_by === v.care_giver_id ? (v.care_givers as any)?.name : t.completed_by}
+                        by {t.completed_by === v.care_giver_id ? (v.care_givers as any)?.name : (getCgName(t.completed_by) || t.completed_by)}
                       </span>
                     )}
                   </div>
@@ -305,7 +313,7 @@ function CompletedVisitRow({ v, onClick }: { v: any; onClick: () => void }) {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{m.notes}</p>
                     {m.completed_by && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">by {m.completed_by}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">by {getCgName(m.completed_by) || m.completed_by}</p>
                     )}
                   </div>
                 ))
