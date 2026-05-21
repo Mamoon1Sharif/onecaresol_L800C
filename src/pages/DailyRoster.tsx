@@ -646,7 +646,10 @@ const DailyRoster = () => {
                         </td>
                         <td className="p-1.5 border-r border-border text-[11px] text-foreground/80">{r.serviceCall}</td>
                         <td className="p-1.5 border-r border-border text-center">
-                          {i % 2 === 0 && <IconCell icon={Tag} label="Service tag" className="h-3 w-3 text-muted-foreground" />}
+                          {(() => {
+                            const meta = getClockInMethodMeta((r as any).clockInMethod);
+                            return meta ? <IconCell icon={meta.icon} label={meta.label} className={meta.className} /> : null;
+                          })()}
                         </td>
                         <td className="p-1.5 border-r border-border text-center">
                           {i % 4 === 1 && <IconCell icon={UserPlus} label="Double-up shift" className="h-3 w-3 text-primary" />}
