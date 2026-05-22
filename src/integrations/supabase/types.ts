@@ -39,6 +39,9 @@ export type Database = {
           gender: string | null
           handset_logged_out_at: string | null
           home_phone: string | null
+          homead_lat: number | null
+          homead_long: number | null
+          homead_updated_at: string | null
           house_street: string | null
           id: string
           is_driver: boolean | null
@@ -112,6 +115,9 @@ export type Database = {
           gender?: string | null
           handset_logged_out_at?: string | null
           home_phone?: string | null
+          homead_lat?: number | null
+          homead_long?: number | null
+          homead_updated_at?: string | null
           house_street?: string | null
           id?: string
           is_driver?: boolean | null
@@ -185,6 +191,9 @@ export type Database = {
           gender?: string | null
           handset_logged_out_at?: string | null
           home_phone?: string | null
+          homead_lat?: number | null
+          homead_long?: number | null
+          homead_updated_at?: string | null
           house_street?: string | null
           id?: string
           is_driver?: boolean | null
