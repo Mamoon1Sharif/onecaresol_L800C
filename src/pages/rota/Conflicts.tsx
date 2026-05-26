@@ -54,7 +54,7 @@ const DELETED_SHIFTS_KEY = "deleted_unassigned_shifts_v1";
 type DeletedShiftSnapshot = {
   id: string; ref: string; date: string; serviceUser: string;
   start: string; end: string; duration: string; serviceCall?: string;
-  deletedAt: string;
+  deletedAt: string; deletedBy?: string;
 };
 function loadDeletedShifts(): Record<string, DeletedShiftSnapshot> {
   try { return JSON.parse(localStorage.getItem(DELETED_SHIFTS_KEY) || "{}"); } catch { return {}; }
