@@ -395,7 +395,8 @@ const Dashboard = () => {
   // Live visits: scheduled start has begun, and shift is not yet completed (no clock-out) and within scheduled window or in progress
   const liveVisits = (todaysVisits as any[]).filter((v) => {
     const startMinutes = (v.start_hour ?? 0) * 60 + (v.start_minute ?? 0);
-    const endMinutes = startMinutes + (v.duration ?? 0) * 60 + (v.duration_minutes ?? 0);
+    const durationMins = v.duration_minutes ?? (v.duration ?? 0) * 60;
+    const endMinutes = startMinutes + durationMins;
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
     const status = (v.status || "").toLowerCase();
     if (status === "completed" || status === "complete") return false;
