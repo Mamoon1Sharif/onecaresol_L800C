@@ -590,6 +590,41 @@ const Conflicts = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* View-only deleted shift details */}
+      <Dialog open={!!viewDeleted} onOpenChange={(o) => !o && setViewDeleted(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Deleted Shift — {viewDeleted?.ref}
+            </DialogTitle>
+          </DialogHeader>
+          {viewDeleted && (
+            <div className="space-y-2 text-sm">
+              <div className="text-xs text-muted-foreground italic">View only — this shift has been deleted.</div>
+              <div className="grid grid-cols-3 gap-2 pt-2">
+                {[
+                  ["Reference", viewDeleted.ref],
+                  ["Date", viewDeleted.date],
+                  ["Service Member", viewDeleted.serviceUser],
+                  ["Start", viewDeleted.start],
+                  ["End", viewDeleted.end],
+                  ["Duration", viewDeleted.duration],
+                  ["Service Call", viewDeleted.serviceCall ?? "—"],
+                  ["Deleted At", new Date(viewDeleted.deletedAt).toLocaleString("en-GB")],
+                  ["Deleted By", viewDeleted.deletedBy ?? "—"],
+                ].map(([k, v]) => (
+                  <div key={k} className="contents">
+                    <div className="text-muted-foreground">{k}</div>
+                    <div className="col-span-2 font-medium break-words">{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
       <CancelledShiftDialog
         shift={cancelledDetail}
