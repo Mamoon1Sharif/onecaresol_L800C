@@ -87,6 +87,7 @@ function makeRows(careReceivers: any[]) {
 
 const Conflicts = () => {
   const nav = useNavigate();
+  const { user } = useAuth();
   const { data: careReceivers = [] } = useCareReceivers();
   const { data: careGivers = [] } = useCareGivers();
 
