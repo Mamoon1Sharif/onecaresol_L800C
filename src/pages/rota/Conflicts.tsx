@@ -154,12 +154,13 @@ const Conflicts = () => {
   const performBulkDelete = () => {
     const next = { ...deletedShifts };
     const now = new Date().toISOString();
+    const who = user?.email || user?.id || "Unknown user";
     rows.forEach((r) => {
       if (selected.has(r.id)) {
         next[r.id] = {
           id: r.id, ref: r.ref, date: r.date, serviceUser: r.serviceUser,
           start: r.start, end: r.end, duration: r.duration,
-          serviceCall: r.serviceCall, deletedAt: now,
+          serviceCall: r.serviceCall, deletedAt: now, deletedBy: who,
         };
       }
     });
