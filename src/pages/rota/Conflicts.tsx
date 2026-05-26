@@ -325,16 +325,25 @@ const Conflicts = () => {
                     <th className="p-2 border-r border-border text-center">Duration</th>
                     <th className="p-2 border-r border-border text-left">Service Call</th>
                     <th className="p-2 border-r border-border text-left">Deleted At</th>
+                    <th className="p-2 border-r border-border text-left">Deleted By</th>
                     <th className="p-2 text-center w-24">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {deletedList.length === 0 && (
-                    <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No deleted shifts.</td></tr>
+                    <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">No deleted shifts.</td></tr>
                   )}
                   {deletedList.map((d) => (
                     <tr key={d.id} className="border-b border-border hover:bg-muted/30">
-                      <td className="p-2 border-r border-border font-mono text-[11px]">{d.ref}</td>
+                      <td className="p-2 border-r border-border font-mono text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setViewDeleted(d)}
+                          className="text-primary hover:underline"
+                        >
+                          {d.ref}
+                        </button>
+                      </td>
                       <td className="p-2 border-r border-border font-mono text-[11px]">{d.date}</td>
                       <td className="p-2 border-r border-border text-primary">{d.serviceUser}</td>
                       <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.start}</td>
@@ -343,6 +352,9 @@ const Conflicts = () => {
                       <td className="p-2 border-r border-border text-[11px]">{d.serviceCall ?? "—"}</td>
                       <td className="p-2 border-r border-border font-mono text-[11px] text-muted-foreground">
                         {new Date(d.deletedAt).toLocaleString("en-GB")}
+                      </td>
+                      <td className="p-2 border-r border-border text-[11px] text-muted-foreground">
+                        {d.deletedBy ?? "—"}
                       </td>
                       <td className="p-2 text-center">
                         <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => restoreDeleted(d.id)}>
