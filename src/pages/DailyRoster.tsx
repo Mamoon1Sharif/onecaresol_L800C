@@ -609,7 +609,7 @@ const DailyRoster = () => {
                             onClick={() => r.receiver?.id && setReceiverProfile(r.receiver)}
                             className="text-primary hover:underline cursor-pointer text-[11px] text-left"
                           >
-                            {r.serviceUser}
+                            {r.serviceUserRaw}
                           </button>
                         </td>
                         <td className="p-1.5 border-r border-border text-center font-mono text-[11px] bg-emerald-50">{r.scheduledStart}</td>
