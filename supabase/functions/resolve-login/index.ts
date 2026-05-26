@@ -21,9 +21,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { company_code, username, password } = await req.json();
-    if (typeof company_code !== "string" || typeof username !== "string" ||
-        !company_code.trim() || !username.trim()) {
+    const body = await req.json();
+    const company_code: string = body.company_code ?? "";
+    const username: string = body.username ?? "";
+    // Mobile app sends `pin`; web app sends `password`. Accept either; also
+    // tolerate one being passed in the other field.
+    const password: string = typeof body.password === "string" ? body.password : "";
+    const pin: string = typeof body.pin === "string" ? body.pin : "";
+
+    if (!company_code.trim() || !username.trim()) {
       return json({ error: "company_code and username are required" }, 400);
     }
 
@@ -57,7 +63,7 @@ Deno.serve(async (req) => {
     //   Find caregiver by login_code (case-insensitive) within that company.
     const { data: cg, error: cgErr } = await admin
       .from("care_givers")
-      .select("id, name, login_code, login_password, status, company_id")
+      .select("id, name, login_code, login_password, login_pin, status, company_id")
       .eq("company_id", company.id)
       .ilike("login_code", username.trim())
       .maybeSingle();
@@ -66,11 +72,25 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid Company ID or username" }, 404);
     }
 
-    //   Verify the password matches what's stored on the caregiver record.
-    if (typeof password !== "string" || !password ||
-        (cg.login_password ?? "") !== password) {
+    //   Verify credential: accept PIN match OR password match. Try the
+    //   explicit field first, then fall back to the other in case the
+    //   client put the value in the "wrong" field.
+    const storedPin = (cg.login_pin ?? "").toString();
+    const storedPwd = (cg.login_password ?? "").toString();
+    const candidates = [pin, password].filter((v) => typeof v === "string" && v.length > 0);
+    const ok = candidates.some(
+      (v) => (storedPin && v === storedPin) || (storedPwd && v === storedPwd),
+    );
+    if (!ok) {
       return json({ error: "Invalid username or password" }, 401);
     }
+
+    // Use whichever credential value matched as the auth password so the
+    // synthetic auth.users row can sign in.
+    const authPassword =
+      (storedPin && candidates.includes(storedPin) && storedPin) ||
+      (storedPwd && candidates.includes(storedPwd) && storedPwd) ||
+      candidates[0];
 
     //   Build a stable synthetic email for this caregiver.
     const safeCode = company.company_code.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -95,14 +115,14 @@ Deno.serve(async (req) => {
       authUserId = match.id;
       // Keep password in sync with the caregiver record.
       const { error: updErr } = await admin.auth.admin.updateUserById(match.id, {
-        password,
+        password: authPassword,
         email_confirm: true,
       });
       if (updErr) return json({ error: updErr.message }, 500);
     } else {
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
-        password,
+        password: authPassword,
         email_confirm: true,
         user_metadata: {
           full_name: cg.name,
