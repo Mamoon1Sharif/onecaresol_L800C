@@ -8,6 +8,11 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Trash2, RotateCcw } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   Home, Calendar, Clock, Info, XCircle, ThumbsUp, Link2, Map, Users,
@@ -42,7 +47,21 @@ const FILTERS = [
   { value: "double-booked", label: "Show Double Booked" },
   { value: "skill-mismatch", label: "Show Skill Mismatch" },
   { value: "all", label: "Show All Conflicts" },
+  { value: "deleted", label: "Show Deleted Shifts" },
 ];
+
+const DELETED_SHIFTS_KEY = "deleted_unassigned_shifts_v1";
+type DeletedShiftSnapshot = {
+  id: string; ref: string; date: string; serviceUser: string;
+  start: string; end: string; duration: string; serviceCall?: string;
+  deletedAt: string;
+};
+function loadDeletedShifts(): Record<string, DeletedShiftSnapshot> {
+  try { return JSON.parse(localStorage.getItem(DELETED_SHIFTS_KEY) || "{}"); } catch { return {}; }
+}
+function saveDeletedShifts(d: Record<string, DeletedShiftSnapshot>) {
+  localStorage.setItem(DELETED_SHIFTS_KEY, JSON.stringify(d));
+}
 
 const BULK_ACTIONS = [
   "Bulk Actions...",
@@ -93,6 +112,8 @@ const Conflicts = () => {
     };
   }, []);
   const [openShift, setOpenShift] = useState<any>(null);
+  const [deletedShifts, setDeletedShifts] = useState<Record<string, DeletedShiftSnapshot>>(() => loadDeletedShifts());
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const today = new Date();
   const future = new Date(today);
@@ -108,16 +129,54 @@ const Conflicts = () => {
 
   const rows = useMemo(() => {
     return allRows.filter((r) => {
-      // Once a care giver has been assigned, the shift is resolved and should
-      // no longer appear in the conflicts list at all.
       if (assignments[r.id]) return false;
       if (persistedAssigned[r.ref]) return false;
+      if (deletedShifts[r.id]) return false;
       if (filter === "cancelled" && !r.isCancelled) return false;
       if (filter === "unallocated" && r.teamMember !== "Unallocated") return false;
       if (search && !r.serviceUser.toLowerCase().includes(search.toLowerCase()) && !r.ref.includes(search)) return false;
       return true;
     });
-  }, [allRows, filter, search, assignments, persistedAssigned]);
+  }, [allRows, filter, search, assignments, persistedAssigned, deletedShifts]);
+
+  const deletedList = useMemo(() => {
+    const list = Object.values(deletedShifts);
+    if (!search) return list;
+    const q = search.toLowerCase();
+    return list.filter((d) => d.serviceUser.toLowerCase().includes(q) || d.ref.includes(search));
+  }, [deletedShifts, search]);
+
+  const isDeletedView = filter === "deleted";
+
+  const performBulkDelete = () => {
+    const next = { ...deletedShifts };
+    const now = new Date().toISOString();
+    rows.forEach((r) => {
+      if (selected.has(r.id)) {
+        next[r.id] = {
+          id: r.id, ref: r.ref, date: r.date, serviceUser: r.serviceUser,
+          start: r.start, end: r.end, duration: r.duration,
+          serviceCall: r.serviceCall, deletedAt: now,
+        };
+      }
+    });
+    saveDeletedShifts(next);
+    setDeletedShifts(next);
+    const count = selected.size;
+    setSelected(new Set());
+    setBulk("Bulk Actions...");
+    setConfirmDelete(false);
+    toast.success(`${count} shift(s) deleted. View them under "Show Deleted Shifts".`);
+    setFilter("deleted");
+  };
+
+  const restoreDeleted = (id: string) => {
+    const next = { ...deletedShifts };
+    delete next[id];
+    saveDeletedShifts(next);
+    setDeletedShifts(next);
+    toast.success("Shift restored.");
+  };
 
   const totalMissing = rows.filter((r) => r.teamMember === "Unallocated").length;
 
@@ -158,39 +217,51 @@ const Conflicts = () => {
 
         {/* Conflict count */}
         <div className="text-sm font-semibold text-foreground px-1">
-          ({totalMissing}) shifts missing care giver
+          {isDeletedView
+            ? `(${deletedList.length}) deleted shift(s)`
+            : `(${totalMissing}) shifts missing care giver`}
         </div>
 
         {/* Bulk actions + search */}
         <div className="flex items-center justify-between gap-3 flex-wrap px-1">
           <div className="flex items-center gap-2">
-            <Select value={bulk} onValueChange={setBulk}>
-              <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {BULK_ACTIONS.map((a) => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              className="bg-success hover:bg-success/90 text-success-foreground h-8 px-4 text-xs font-semibold"
-              onClick={() => {
-                if (bulk === "Bulk Actions...") {
-                  toast.error("Pick a bulk action first.");
-                  return;
-                }
-                if (selected.size === 0) {
-                  toast.error("Select at least one row.");
-                  return;
-                }
-                const ok = window.confirm(`Apply "${bulk}" to ${selected.size} visit(s)?`);
-                if (!ok) return;
-                toast.success(`${bulk} applied to ${selected.size} visit(s).`);
-                setSelected(new Set());
-                setBulk("Bulk Actions...");
-              }}
-            >
-              Go
-            </Button>
+            {!isDeletedView && (
+              <>
+                <Select value={bulk} onValueChange={setBulk}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {BULK_ACTIONS.map((a) => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="bg-success hover:bg-success/90 text-success-foreground h-8 px-4 text-xs font-semibold"
+                  onClick={() => {
+                    if (bulk === "Bulk Actions...") { toast.error("Pick a bulk action first."); return; }
+                    if (selected.size === 0) { toast.error("Select at least one row."); return; }
+                    if (bulk === "Delete Visits") { setConfirmDelete(true); return; }
+                    const ok = window.confirm(`Apply "${bulk}" to ${selected.size} visit(s)?`);
+                    if (!ok) return;
+                    toast.success(`${bulk} applied to ${selected.size} visit(s).`);
+                    setSelected(new Set());
+                    setBulk("Bulk Actions...");
+                  }}
+                >
+                  Go
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-8 px-3 text-xs gap-1"
+                  onClick={() => {
+                    if (selected.size === 0) { toast.error("Select at least one row."); return; }
+                    setConfirmDelete(true);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+                </Button>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold">Search:</span>
@@ -198,8 +269,78 @@ const Conflicts = () => {
           </div>
         </div>
 
+
+        {/* Deleted shifts view */}
+        {isDeletedView && (
+          <Card className="border border-border overflow-hidden">
+            <div className="border-t-2 border-t-destructive/70 px-4 pt-3 pb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Trash2 className="h-4 w-4 text-destructive" /> Deleted Shifts
+              </h3>
+              {deletedList.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
+                    saveDeletedShifts({});
+                    setDeletedShifts({});
+                    toast.success("Deleted shifts list cleared.");
+                  }}
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-muted/60 border-b border-border">
+                    <th className="p-2 border-r border-border text-left">Ref</th>
+                    <th className="p-2 border-r border-border text-left">Date</th>
+                    <th className="p-2 border-r border-border text-left">Service Member</th>
+                    <th className="p-2 border-r border-border text-center">Start</th>
+                    <th className="p-2 border-r border-border text-center">End</th>
+                    <th className="p-2 border-r border-border text-center">Duration</th>
+                    <th className="p-2 border-r border-border text-left">Service Call</th>
+                    <th className="p-2 border-r border-border text-left">Deleted At</th>
+                    <th className="p-2 text-center w-24">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deletedList.length === 0 && (
+                    <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No deleted shifts.</td></tr>
+                  )}
+                  {deletedList.map((d) => (
+                    <tr key={d.id} className="border-b border-border hover:bg-muted/30">
+                      <td className="p-2 border-r border-border font-mono text-[11px]">{d.ref}</td>
+                      <td className="p-2 border-r border-border font-mono text-[11px]">{d.date}</td>
+                      <td className="p-2 border-r border-border text-primary">{d.serviceUser}</td>
+                      <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.start}</td>
+                      <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.end}</td>
+                      <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.duration}</td>
+                      <td className="p-2 border-r border-border text-[11px]">{d.serviceCall ?? "—"}</td>
+                      <td className="p-2 border-r border-border font-mono text-[11px] text-muted-foreground">
+                        {new Date(d.deletedAt).toLocaleString("en-GB")}
+                      </td>
+                      <td className="p-2 text-center">
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => restoreDeleted(d.id)}>
+                          <RotateCcw className="h-3 w-3" /> Restore
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
         {/* Conflict spreadsheet */}
+        {!isDeletedView && (
         <TooltipProvider delayDuration={150}>
+
           <Card className="border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
@@ -387,15 +528,36 @@ const Conflicts = () => {
             </div>
           </Card>
         </TooltipProvider>
+        )}
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-          <span>Showing <strong className="text-foreground">1</strong> to <strong className="text-foreground">{rows.length}</strong> of <strong className="text-foreground">{totalMissing}</strong></span>
-          {selected.size > 0 && <span className="text-primary font-medium">{selected.size} selected</span>}
-        </div>
+        {!isDeletedView && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>Showing <strong className="text-foreground">1</strong> to <strong className="text-foreground">{rows.length}</strong> of <strong className="text-foreground">{totalMissing}</strong></span>
+            {selected.size > 0 && <span className="text-primary font-medium">{selected.size} selected</span>}
+          </div>
+        )}
 
         {/* Clashing Rotas Section */}
-        <ClashingRotasSection fromDate={fromDate} toDate={toDate} />
+        {!isDeletedView && <ClashingRotasSection fromDate={fromDate} toDate={toDate} />}
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selected.size} shift(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The selected shifts will be removed from the conflicts list. You can view and restore them from "Show Deleted Shifts".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <CancelledShiftDialog
         shift={cancelledDetail}
