@@ -452,7 +452,11 @@ export default function HolidayReport() {
                 <Input
                   type="date"
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setStartDate(v);
+                    if (v && endDate && endDate < v) setEndDate(v);
+                  }}
                 />
               </FieldRow>
 
@@ -460,6 +464,7 @@ export default function HolidayReport() {
                 <Input
                   type="date"
                   value={endDate}
+                  min={startDate || undefined}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
               </FieldRow>
