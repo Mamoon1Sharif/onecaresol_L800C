@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +18,11 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCompany } from "@/hooks/use-company";
-import { Users, Plus, ShieldAlert } from "lucide-react";
+import { Users, Plus, ShieldAlert, ArrowLeft } from "lucide-react";
+
 
 const CompanyUsers = () => {
+  const navigate = useNavigate();
   const { data: cu, isLoading } = useCurrentCompany();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -111,13 +114,18 @@ const CompanyUsers = () => {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Users className="h-6 w-6" /> Users
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Company <span className="font-mono">{(cu as any)?.companies?.company_code}</span> · {(cu as any)?.companies?.name}
-          </p>
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" onClick={() => navigate(-1)} aria-label="Go back">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Users className="h-6 w-6" /> Users
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Company <span className="font-mono">{(cu as any)?.companies?.company_code}</span> · {(cu as any)?.companies?.name}
+            </p>
+          </div>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
