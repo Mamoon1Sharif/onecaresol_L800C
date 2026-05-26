@@ -163,21 +163,36 @@ const CompanyUsers = () => {
                 <TableHead>Display name</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Last login</TableHead>
+                <TableHead>Duration</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u: any) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-mono">{u.username}</TableCell>
-                  <TableCell>{u.display_name ?? "—"}</TableCell>
-                  <TableCell><Badge variant="secondary">{u.role}</Badge></TableCell>
-                  <TableCell>
-                    <Badge variant={u.status === "Active" ? "default" : "secondary"}>{u.status}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {users.map((u: any) => {
+                const s = sessionMap.get(u.user_id);
+                const loggedIn = !!s?.is_logged_in;
+                const last = s?.last_sign_in_at ? new Date(s.last_sign_in_at) : null;
+                return (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-mono">{u.username}</TableCell>
+                    <TableCell>{u.display_name ?? "—"}</TableCell>
+                    <TableCell><Badge variant="secondary">{u.role}</Badge></TableCell>
+                    <TableCell>
+                      {loggedIn
+                        ? <Badge variant="default">Active</Badge>
+                        : <Badge variant="secondary">Offline</Badge>}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {last ? last.toLocaleString("en-GB", { timeZone: "Asia/Karachi" }) : "—"}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {loggedIn && last ? formatDuration(Date.now() - last.getTime()) : "—"}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {users.length === 0 && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No users yet.
                 </TableCell></TableRow>
               )}
