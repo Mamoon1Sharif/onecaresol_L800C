@@ -764,16 +764,16 @@ export function LiveRotaShiftDialog({
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
               onClick={async () => {
                 try {
-                  if (!current.visitId) {
-                    throw new Error("Missing visit id for this shift");
+                  // Conflict-flow shifts have no DB row yet — only a local assignment.
+                  // Only hit the DB when we actually have a visit id.
+                  if (current.visitId) {
+                    const { error } = await supabase
+                      .from("daily_visits")
+                      .update({ care_giver_id: null, status: "Pending" })
+                      .eq("id", current.visitId);
+
+                    if (error) throw error;
                   }
-
-                  const { error } = await supabase
-                    .from("daily_visits")
-                    .update({ care_giver_id: null, status: "Pending" })
-                    .eq("id", current.visitId);
-
-                  if (error) throw error;
                 } catch (e) {
                   toast.error("Could not remove care giver from this shift.");
                   return;
