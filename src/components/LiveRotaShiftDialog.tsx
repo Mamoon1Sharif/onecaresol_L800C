@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ShiftTasksSection } from "@/components/shift/ShiftTasksSection";
 import { useCareGivers } from "@/hooks/use-care-data";
 import { removePendingClashesForStaff, removePendingClashesForRef } from "@/pages/rota/Conflicts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -550,18 +549,9 @@ export function LiveRotaShiftDialog({
 
 
 
-            {/* Tasks Required */}
-            <ShiftTasksSection
-              visitId={current.visitId}
-              assignedTo={current.staff}
-              date={current.date}
-              group={medGroupLabel.replace("Medication", "Tasks")}
-            />
-
             {/* Medication */}
             <section className="border border-border rounded-sm overflow-hidden">
               <div className="border-t-2 border-t-primary/70 flex items-center justify-between px-3 py-2 bg-card">
-
                 <h3 className="text-sm font-semibold text-primary">Medication ({medGroupLabel})</h3>
                 <span className="text-xs text-muted-foreground">{clientName || "—"}</span>
               </div>

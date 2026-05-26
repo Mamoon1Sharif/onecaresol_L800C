@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,11 +17,9 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCompany } from "@/hooks/use-company";
-import { Users, Plus, ShieldAlert, ArrowLeft } from "lucide-react";
-
+import { Users, Plus, ShieldAlert } from "lucide-react";
 
 const CompanyUsers = () => {
-  const navigate = useNavigate();
   const { data: cu, isLoading } = useCurrentCompany();
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -45,32 +42,6 @@ const CompanyUsers = () => {
       return data ?? [];
     },
   });
-
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["company_user_sessions", cu?.company_id],
-    enabled: !!cu,
-    refetchInterval: 30_000,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_company_user_sessions");
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  const sessionMap = useMemo(() => {
-    const m = new Map<string, { last_sign_in_at: string | null; is_logged_in: boolean }>();
-    for (const s of sessions as any[]) {
-      m.set(s.user_id, { last_sign_in_at: s.last_sign_in_at, is_logged_in: s.is_logged_in });
-    }
-    return m;
-  }, [sessions]);
-
-  // Tick every 30s so durations update for currently logged-in users
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setTick((x) => x + 1), 30_000);
-    return () => clearInterval(t);
-  }, []);
 
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading…</div>;
 
@@ -114,18 +85,13 @@ const CompanyUsers = () => {
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" onClick={() => navigate(-1)} aria-label="Go back">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="h-6 w-6" /> Users
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              Company <span className="font-mono">{(cu as any)?.companies?.company_code}</span> · {(cu as any)?.companies?.name}
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Users className="h-6 w-6" /> Users
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Company <span className="font-mono">{(cu as any)?.companies?.company_code}</span> · {(cu as any)?.companies?.name}
+          </p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
@@ -171,36 +137,21 @@ const CompanyUsers = () => {
                 <TableHead>Display name</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Last login</TableHead>
-                <TableHead>Duration</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((u: any) => {
-                const s = sessionMap.get(u.user_id);
-                const loggedIn = !!s?.is_logged_in;
-                const last = s?.last_sign_in_at ? new Date(s.last_sign_in_at) : null;
-                return (
-                  <TableRow key={u.id}>
-                    <TableCell className="font-mono">{u.username}</TableCell>
-                    <TableCell>{u.display_name ?? "—"}</TableCell>
-                    <TableCell><Badge variant="secondary">{u.role}</Badge></TableCell>
-                    <TableCell>
-                      {loggedIn
-                        ? <Badge variant="default">Active</Badge>
-                        : <Badge variant="secondary">Offline</Badge>}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {last ? last.toLocaleString("en-GB", { timeZone: "Asia/Karachi" }) : "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {loggedIn && last ? formatDuration(Date.now() - last.getTime()) : "—"}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {users.map((u: any) => (
+                <TableRow key={u.id}>
+                  <TableCell className="font-mono">{u.username}</TableCell>
+                  <TableCell>{u.display_name ?? "—"}</TableCell>
+                  <TableCell><Badge variant="secondary">{u.role}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant={u.status === "Active" ? "default" : "secondary"}>{u.status}</Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
               {users.length === 0 && (
-                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                   No users yet.
                 </TableCell></TableRow>
               )}
@@ -221,17 +172,6 @@ function Field({ label, value, onChange, placeholder, type = "text" }: {
       <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} />
     </div>
   );
-}
-
-function formatDuration(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m`;
-  return `${s}s`;
 }
 
 export default CompanyUsers;

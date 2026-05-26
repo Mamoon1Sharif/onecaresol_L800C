@@ -512,9 +512,7 @@ const AddRota = () => {
               />
             </div>
             <Badge variant="outline" className="text-sm px-3 py-1.5">
-              {search.trim()
-                ? `${filtered.length} ${filtered.length === 1 ? "match" : "matches"}`
-                : `${filtered.length} ${filtered.length === 1 ? "service member" : "service members"}`}
+              {filtered.length} results
             </Badge>
           </div>
 
