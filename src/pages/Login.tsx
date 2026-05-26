@@ -36,7 +36,7 @@ const Login = () => {
     try {
       // 1. Resolve (company_id + username) -> the synthetic auth email.
       const { data, error } = await supabase.functions.invoke("resolve-login", {
-        body: { company_code: companyId.trim(), username: username.trim() },
+        body: { company_code: companyId.trim(), username: username.trim(), password },
       });
       if (error || !data?.email) {
         throw new Error(data?.error || error?.message || "Invalid Company ID or username");
