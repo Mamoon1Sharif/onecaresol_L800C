@@ -116,6 +116,7 @@ const Conflicts = () => {
   const [openShift, setOpenShift] = useState<any>(null);
   const [deletedShifts, setDeletedShifts] = useState<Record<string, DeletedShiftSnapshot>>(() => loadDeletedShifts());
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [viewDeleted, setViewDeleted] = useState<DeletedShiftSnapshot | null>(null);
 
   const today = new Date();
   const future = new Date(today);
