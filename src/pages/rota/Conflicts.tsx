@@ -205,11 +205,17 @@ const Conflicts = () => {
               </SelectContent>
             </Select>
             <Input
-              type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
+              type="date" value={fromDate}
+              onChange={(e) => {
+                const v = e.target.value;
+                setFromDate(v);
+                if (v && toDate && toDate < v) setToDate(v);
+              }}
               className="h-8 w-[170px] pr-2 text-xs bg-emerald-100 border-emerald-200"
             />
             <Input
-              type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
+              type="date" value={toDate} min={fromDate || undefined}
+              onChange={(e) => setToDate(e.target.value)}
               className="h-8 w-[170px] pr-2 text-xs bg-rose-100 border-rose-200"
             />
           </div>
