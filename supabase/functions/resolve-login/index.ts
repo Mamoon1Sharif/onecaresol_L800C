@@ -115,14 +115,14 @@ Deno.serve(async (req) => {
       authUserId = match.id;
       // Keep password in sync with the caregiver record.
       const { error: updErr } = await admin.auth.admin.updateUserById(match.id, {
-        password,
+        password: authPassword,
         email_confirm: true,
       });
       if (updErr) return json({ error: updErr.message }, 500);
     } else {
       const { data: created, error: createErr } = await admin.auth.admin.createUser({
         email,
-        password,
+        password: authPassword,
         email_confirm: true,
         user_metadata: {
           full_name: cg.name,
