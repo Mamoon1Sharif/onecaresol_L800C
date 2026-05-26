@@ -43,6 +43,32 @@ const CompanyUsers = () => {
     },
   });
 
+  const { data: sessions = [] } = useQuery({
+    queryKey: ["company_user_sessions", cu?.company_id],
+    enabled: !!cu,
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_company_user_sessions");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const sessionMap = useMemo(() => {
+    const m = new Map<string, { last_sign_in_at: string | null; is_logged_in: boolean }>();
+    for (const s of sessions as any[]) {
+      m.set(s.user_id, { last_sign_in_at: s.last_sign_in_at, is_logged_in: s.is_logged_in });
+    }
+    return m;
+  }, [sessions]);
+
+  // Tick every 30s so durations update for currently logged-in users
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((x) => x + 1), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
   if (isLoading) return <div className="p-8 text-muted-foreground">Loading…</div>;
 
   const isAdmin = cu && (cu.role === "owner" || cu.role === "admin");
