@@ -220,17 +220,17 @@ const Conflicts = () => {
           </div>
         </div>
 
-        {/* Conflict count */}
-        <div className="text-sm font-semibold text-foreground px-1">
-          {isDeletedView
-            ? `(${deletedList.length}) deleted shift(s)`
-            : `(${totalMissing}) shifts missing care giver`}
-        </div>
+        {/* Conflict count (hidden in deleted view; shown inline there) */}
+        {!isDeletedView && (
+          <div className="text-sm font-semibold text-foreground px-1">
+            ({totalMissing}) shifts missing care giver
+          </div>
+        )}
 
         {/* Bulk actions + search */}
         <div className="flex items-center justify-between gap-3 flex-wrap px-1">
           <div className="flex items-center gap-2">
-            {!isDeletedView && (
+            {!isDeletedView ? (
               <>
                 <Select value={bulk} onValueChange={setBulk}>
                   <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -254,17 +254,46 @@ const Conflicts = () => {
                 >
                   Go
                 </Button>
+                {selected.size > 0 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-8 px-3 text-xs gap-1"
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete Selected ({selected.size})
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
                 <Button
                   size="sm"
-                  variant="destructive"
-                  className="h-8 px-3 text-xs gap-1"
-                  onClick={() => {
-                    if (selected.size === 0) { toast.error("Select at least one row."); return; }
-                    setConfirmDelete(true);
-                  }}
+                  variant="outline"
+                  className="h-8 text-xs gap-1"
+                  onClick={() => setFilter("unallocated")}
                 >
-                  <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+                  ← Go Back
                 </Button>
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                  Deleted Shifts ({deletedList.length})
+                </div>
+                {deletedList.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs"
+                    onClick={() => {
+                      if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
+                      saveDeletedShifts({});
+                      setDeletedShifts({});
+                      toast.success("Deleted shifts list cleared.");
+                    }}
+                  >
+                    Clear All
+                  </Button>
+                )}
               </>
             )}
           </div>
@@ -278,26 +307,6 @@ const Conflicts = () => {
         {/* Deleted shifts view */}
         {isDeletedView && (
           <Card className="border border-border overflow-hidden">
-            <div className="border-t-2 border-t-destructive/70 px-4 pt-3 pb-2 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Trash2 className="h-4 w-4 text-destructive" /> Deleted Shifts
-              </h3>
-              {deletedList.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs"
-                  onClick={() => {
-                    if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
-                    saveDeletedShifts({});
-                    setDeletedShifts({});
-                    toast.success("Deleted shifts list cleared.");
-                  }}
-                >
-                  Clear All
-                </Button>
-              )}
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
