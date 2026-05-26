@@ -270,35 +270,37 @@ const Conflicts = () => {
                 )}
               </>
             ) : (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs gap-1"
-                  onClick={() => setFilter("unallocated")}
-                >
-                  ← Go Back
-                </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1"
+                    onClick={() => setFilter("unallocated")}
+                  >
+                    ← Go Back
+                  </Button>
+                  {deletedList.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
+                        saveDeletedShifts({});
+                        setDeletedShifts({});
+                        toast.success("Deleted shifts list cleared.");
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Trash2 className="h-4 w-4 text-destructive" />
                   Deleted Shifts ({deletedList.length})
                 </div>
-                {deletedList.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs"
-                    onClick={() => {
-                      if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
-                      saveDeletedShifts({});
-                      setDeletedShifts({});
-                      toast.success("Deleted shifts list cleared.");
-                    }}
-                  >
-                    Clear All
-                  </Button>
-                )}
-              </>
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2">
