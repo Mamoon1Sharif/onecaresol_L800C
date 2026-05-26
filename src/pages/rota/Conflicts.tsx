@@ -129,16 +129,54 @@ const Conflicts = () => {
 
   const rows = useMemo(() => {
     return allRows.filter((r) => {
-      // Once a care giver has been assigned, the shift is resolved and should
-      // no longer appear in the conflicts list at all.
       if (assignments[r.id]) return false;
       if (persistedAssigned[r.ref]) return false;
+      if (deletedShifts[r.id]) return false;
       if (filter === "cancelled" && !r.isCancelled) return false;
       if (filter === "unallocated" && r.teamMember !== "Unallocated") return false;
       if (search && !r.serviceUser.toLowerCase().includes(search.toLowerCase()) && !r.ref.includes(search)) return false;
       return true;
     });
-  }, [allRows, filter, search, assignments, persistedAssigned]);
+  }, [allRows, filter, search, assignments, persistedAssigned, deletedShifts]);
+
+  const deletedList = useMemo(() => {
+    const list = Object.values(deletedShifts);
+    if (!search) return list;
+    const q = search.toLowerCase();
+    return list.filter((d) => d.serviceUser.toLowerCase().includes(q) || d.ref.includes(search));
+  }, [deletedShifts, search]);
+
+  const isDeletedView = filter === "deleted";
+
+  const performBulkDelete = () => {
+    const next = { ...deletedShifts };
+    const now = new Date().toISOString();
+    rows.forEach((r) => {
+      if (selected.has(r.id)) {
+        next[r.id] = {
+          id: r.id, ref: r.ref, date: r.date, serviceUser: r.serviceUser,
+          start: r.start, end: r.end, duration: r.duration,
+          serviceCall: r.serviceCall, deletedAt: now,
+        };
+      }
+    });
+    saveDeletedShifts(next);
+    setDeletedShifts(next);
+    const count = selected.size;
+    setSelected(new Set());
+    setBulk("Bulk Actions...");
+    setConfirmDelete(false);
+    toast.success(`${count} shift(s) deleted. View them under "Show Deleted Shifts".`);
+    setFilter("deleted");
+  };
+
+  const restoreDeleted = (id: string) => {
+    const next = { ...deletedShifts };
+    delete next[id];
+    saveDeletedShifts(next);
+    setDeletedShifts(next);
+    toast.success("Shift restored.");
+  };
 
   const totalMissing = rows.filter((r) => r.teamMember === "Unallocated").length;
 
