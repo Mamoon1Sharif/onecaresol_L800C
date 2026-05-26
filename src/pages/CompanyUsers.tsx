@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +18,8 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useCurrentCompany } from "@/hooks/use-company";
-import { Users, Plus, ShieldAlert } from "lucide-react";
+import { Users, Plus, ShieldAlert, ArrowLeft } from "lucide-react";
+
 
 const CompanyUsers = () => {
   const { data: cu, isLoading } = useCurrentCompany();
