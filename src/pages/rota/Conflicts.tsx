@@ -167,7 +167,6 @@ const Conflicts = () => {
     setBulk("Bulk Actions...");
     setConfirmDelete(false);
     toast.success(`${count} shift(s) deleted. View them under "Show Deleted Shifts".`);
-    setFilter("deleted");
   };
 
   const restoreDeleted = (id: string) => {
