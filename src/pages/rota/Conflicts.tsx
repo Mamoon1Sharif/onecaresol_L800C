@@ -47,7 +47,21 @@ const FILTERS = [
   { value: "double-booked", label: "Show Double Booked" },
   { value: "skill-mismatch", label: "Show Skill Mismatch" },
   { value: "all", label: "Show All Conflicts" },
+  { value: "deleted", label: "Show Deleted Shifts" },
 ];
+
+const DELETED_SHIFTS_KEY = "deleted_unassigned_shifts_v1";
+type DeletedShiftSnapshot = {
+  id: string; ref: string; date: string; serviceUser: string;
+  start: string; end: string; duration: string; serviceCall?: string;
+  deletedAt: string;
+};
+function loadDeletedShifts(): Record<string, DeletedShiftSnapshot> {
+  try { return JSON.parse(localStorage.getItem(DELETED_SHIFTS_KEY) || "{}"); } catch { return {}; }
+}
+function saveDeletedShifts(d: Record<string, DeletedShiftSnapshot>) {
+  localStorage.setItem(DELETED_SHIFTS_KEY, JSON.stringify(d));
+}
 
 const BULK_ACTIONS = [
   "Bulk Actions...",
