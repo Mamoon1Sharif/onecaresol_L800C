@@ -21,6 +21,7 @@ import {
   ArrowRight, User, CalendarRange, Lock, CalendarDays, Plus, Check, Pencil,
 } from "lucide-react";
 import { useCareReceivers, useCareGivers, useDailyVisitsRange } from "@/hooks/use-care-data";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { LiveRotaShiftDialog } from "@/components/LiveRotaShiftDialog";
 import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
@@ -54,7 +55,7 @@ const DELETED_SHIFTS_KEY = "deleted_unassigned_shifts_v1";
 type DeletedShiftSnapshot = {
   id: string; ref: string; date: string; serviceUser: string;
   start: string; end: string; duration: string; serviceCall?: string;
-  deletedAt: string;
+  deletedAt: string; deletedBy?: string;
 };
 function loadDeletedShifts(): Record<string, DeletedShiftSnapshot> {
   try { return JSON.parse(localStorage.getItem(DELETED_SHIFTS_KEY) || "{}"); } catch { return {}; }
@@ -86,6 +87,7 @@ function makeRows(careReceivers: any[]) {
 
 const Conflicts = () => {
   const nav = useNavigate();
+  const { user } = useAuth();
   const { data: careReceivers = [] } = useCareReceivers();
   const { data: careGivers = [] } = useCareGivers();
 
@@ -114,6 +116,7 @@ const Conflicts = () => {
   const [openShift, setOpenShift] = useState<any>(null);
   const [deletedShifts, setDeletedShifts] = useState<Record<string, DeletedShiftSnapshot>>(() => loadDeletedShifts());
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [viewDeleted, setViewDeleted] = useState<DeletedShiftSnapshot | null>(null);
 
   const today = new Date();
   const future = new Date(today);
@@ -151,12 +154,13 @@ const Conflicts = () => {
   const performBulkDelete = () => {
     const next = { ...deletedShifts };
     const now = new Date().toISOString();
+    const who = user?.email || user?.id || "Unknown user";
     rows.forEach((r) => {
       if (selected.has(r.id)) {
         next[r.id] = {
           id: r.id, ref: r.ref, date: r.date, serviceUser: r.serviceUser,
           start: r.start, end: r.end, duration: r.duration,
-          serviceCall: r.serviceCall, deletedAt: now,
+          serviceCall: r.serviceCall, deletedAt: now, deletedBy: who,
         };
       }
     });
@@ -266,35 +270,37 @@ const Conflicts = () => {
                 )}
               </>
             ) : (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs gap-1"
-                  onClick={() => setFilter("unallocated")}
-                >
-                  ← Go Back
-                </Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1"
+                    onClick={() => setFilter("unallocated")}
+                  >
+                    ← Go Back
+                  </Button>
+                  {deletedList.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
+                        saveDeletedShifts({});
+                        setDeletedShifts({});
+                        toast.success("Deleted shifts list cleared.");
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Trash2 className="h-4 w-4 text-destructive" />
                   Deleted Shifts ({deletedList.length})
                 </div>
-                {deletedList.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs"
-                    onClick={() => {
-                      if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
-                      saveDeletedShifts({});
-                      setDeletedShifts({});
-                      toast.success("Deleted shifts list cleared.");
-                    }}
-                  >
-                    Clear All
-                  </Button>
-                )}
-              </>
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -319,16 +325,25 @@ const Conflicts = () => {
                     <th className="p-2 border-r border-border text-center">Duration</th>
                     <th className="p-2 border-r border-border text-left">Service Call</th>
                     <th className="p-2 border-r border-border text-left">Deleted At</th>
+                    <th className="p-2 border-r border-border text-left">Deleted By</th>
                     <th className="p-2 text-center w-24">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {deletedList.length === 0 && (
-                    <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No deleted shifts.</td></tr>
+                    <tr><td colSpan={10} className="p-8 text-center text-muted-foreground">No deleted shifts.</td></tr>
                   )}
                   {deletedList.map((d) => (
                     <tr key={d.id} className="border-b border-border hover:bg-muted/30">
-                      <td className="p-2 border-r border-border font-mono text-[11px]">{d.ref}</td>
+                      <td className="p-2 border-r border-border font-mono text-[11px]">
+                        <button
+                          type="button"
+                          onClick={() => setViewDeleted(d)}
+                          className="text-primary hover:underline"
+                        >
+                          {d.ref}
+                        </button>
+                      </td>
                       <td className="p-2 border-r border-border font-mono text-[11px]">{d.date}</td>
                       <td className="p-2 border-r border-border text-primary">{d.serviceUser}</td>
                       <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.start}</td>
@@ -337,6 +352,9 @@ const Conflicts = () => {
                       <td className="p-2 border-r border-border text-[11px]">{d.serviceCall ?? "—"}</td>
                       <td className="p-2 border-r border-border font-mono text-[11px] text-muted-foreground">
                         {new Date(d.deletedAt).toLocaleString("en-GB")}
+                      </td>
+                      <td className="p-2 border-r border-border text-[11px] text-muted-foreground">
+                        {d.deletedBy ?? "—"}
                       </td>
                       <td className="p-2 text-center">
                         <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => restoreDeleted(d.id)}>
@@ -571,6 +589,41 @@ const Conflicts = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* View-only deleted shift details */}
+      <Dialog open={!!viewDeleted} onOpenChange={(o) => !o && setViewDeleted(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-4 w-4 text-destructive" />
+              Deleted Shift — {viewDeleted?.ref}
+            </DialogTitle>
+          </DialogHeader>
+          {viewDeleted && (
+            <div className="space-y-2 text-sm">
+              <div className="text-xs text-muted-foreground italic">View only — this shift has been deleted.</div>
+              <div className="grid grid-cols-3 gap-2 pt-2">
+                {[
+                  ["Reference", viewDeleted.ref],
+                  ["Date", viewDeleted.date],
+                  ["Service Member", viewDeleted.serviceUser],
+                  ["Start", viewDeleted.start],
+                  ["End", viewDeleted.end],
+                  ["Duration", viewDeleted.duration],
+                  ["Service Call", viewDeleted.serviceCall ?? "—"],
+                  ["Deleted At", new Date(viewDeleted.deletedAt).toLocaleString("en-GB")],
+                  ["Deleted By", viewDeleted.deletedBy ?? "—"],
+                ].map(([k, v]) => (
+                  <div key={k} className="contents">
+                    <div className="text-muted-foreground">{k}</div>
+                    <div className="col-span-2 font-medium break-words">{v}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
 
       <CancelledShiftDialog
