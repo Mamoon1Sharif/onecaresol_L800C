@@ -662,11 +662,14 @@ const AddEntryForm = ({
         </div>
         <div>
           <Label className="text-xs">From *</Label>
-          <Input type="date" value={start} onChange={(e) => setStart(e.target.value)} required />
+          <Input type="date" value={start} onChange={(e) => {
+            const v = e.target.value; setStart(v);
+            if (v && end && end < v) setEnd(v);
+          }} required />
         </div>
         <div>
           <Label className="text-xs">To</Label>
-          <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+          <Input type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
         </div>
         <div>
           <Label className="text-xs">Hours</Label>
