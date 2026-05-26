@@ -21,6 +21,7 @@ import {
   ArrowRight, User, CalendarRange, Lock, CalendarDays, Plus, Check, Pencil,
 } from "lucide-react";
 import { useCareReceivers, useCareGivers, useDailyVisitsRange } from "@/hooks/use-care-data";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { LiveRotaShiftDialog } from "@/components/LiveRotaShiftDialog";
 import { buildUnassignedShifts } from "@/lib/unassigned-shifts";
