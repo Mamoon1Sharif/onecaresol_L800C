@@ -217,45 +217,58 @@ const Conflicts = () => {
 
         {/* Conflict count */}
         <div className="text-sm font-semibold text-foreground px-1">
-          ({totalMissing}) shifts missing care giver
+          {isDeletedView
+            ? `(${deletedList.length}) deleted shift(s)`
+            : `(${totalMissing}) shifts missing care giver`}
         </div>
 
         {/* Bulk actions + search */}
         <div className="flex items-center justify-between gap-3 flex-wrap px-1">
           <div className="flex items-center gap-2">
-            <Select value={bulk} onValueChange={setBulk}>
-              <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {BULK_ACTIONS.map((a) => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              className="bg-success hover:bg-success/90 text-success-foreground h-8 px-4 text-xs font-semibold"
-              onClick={() => {
-                if (bulk === "Bulk Actions...") {
-                  toast.error("Pick a bulk action first.");
-                  return;
-                }
-                if (selected.size === 0) {
-                  toast.error("Select at least one row.");
-                  return;
-                }
-                const ok = window.confirm(`Apply "${bulk}" to ${selected.size} visit(s)?`);
-                if (!ok) return;
-                toast.success(`${bulk} applied to ${selected.size} visit(s).`);
-                setSelected(new Set());
-                setBulk("Bulk Actions...");
-              }}
-            >
-              Go
-            </Button>
+            {!isDeletedView && (
+              <>
+                <Select value={bulk} onValueChange={setBulk}>
+                  <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {BULK_ACTIONS.map((a) => <SelectItem key={a} value={a} className="text-xs">{a}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="bg-success hover:bg-success/90 text-success-foreground h-8 px-4 text-xs font-semibold"
+                  onClick={() => {
+                    if (bulk === "Bulk Actions...") { toast.error("Pick a bulk action first."); return; }
+                    if (selected.size === 0) { toast.error("Select at least one row."); return; }
+                    if (bulk === "Delete Visits") { setConfirmDelete(true); return; }
+                    const ok = window.confirm(`Apply "${bulk}" to ${selected.size} visit(s)?`);
+                    if (!ok) return;
+                    toast.success(`${bulk} applied to ${selected.size} visit(s).`);
+                    setSelected(new Set());
+                    setBulk("Bulk Actions...");
+                  }}
+                >
+                  Go
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="h-8 px-3 text-xs gap-1"
+                  onClick={() => {
+                    if (selected.size === 0) { toast.error("Select at least one row."); return; }
+                    setConfirmDelete(true);
+                  }}
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Delete Selected
+                </Button>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold">Search:</span>
             <Input value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 w-[220px] text-xs" />
           </div>
         </div>
+
 
         {/* Conflict spreadsheet */}
         <TooltipProvider delayDuration={150}>
