@@ -22,6 +22,7 @@ import { Users, Plus, ShieldAlert, ArrowLeft } from "lucide-react";
 
 
 const CompanyUsers = () => {
+  const navigate = useNavigate();
   const { data: cu, isLoading } = useCurrentCompany();
   const { toast } = useToast();
   const qc = useQueryClient();
