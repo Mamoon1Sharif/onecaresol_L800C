@@ -528,15 +528,36 @@ const Conflicts = () => {
             </div>
           </Card>
         </TooltipProvider>
+        )}
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-          <span>Showing <strong className="text-foreground">1</strong> to <strong className="text-foreground">{rows.length}</strong> of <strong className="text-foreground">{totalMissing}</strong></span>
-          {selected.size > 0 && <span className="text-primary font-medium">{selected.size} selected</span>}
-        </div>
+        {!isDeletedView && (
+          <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+            <span>Showing <strong className="text-foreground">1</strong> to <strong className="text-foreground">{rows.length}</strong> of <strong className="text-foreground">{totalMissing}</strong></span>
+            {selected.size > 0 && <span className="text-primary font-medium">{selected.size} selected</span>}
+          </div>
+        )}
 
         {/* Clashing Rotas Section */}
-        <ClashingRotasSection fromDate={fromDate} toDate={toDate} />
+        {!isDeletedView && <ClashingRotasSection fromDate={fromDate} toDate={toDate} />}
       </div>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selected.size} shift(s)?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The selected shifts will be removed from the conflicts list. You can view and restore them from "Show Deleted Shifts".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={performBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <CancelledShiftDialog
         shift={cancelledDetail}
