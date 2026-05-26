@@ -270,8 +270,77 @@ const Conflicts = () => {
         </div>
 
 
+        {/* Deleted shifts view */}
+        {isDeletedView && (
+          <Card className="border border-border overflow-hidden">
+            <div className="border-t-2 border-t-destructive/70 px-4 pt-3 pb-2 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Trash2 className="h-4 w-4 text-destructive" /> Deleted Shifts
+              </h3>
+              {deletedList.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    if (!window.confirm("Permanently clear all deleted shifts? They will no longer be recoverable.")) return;
+                    saveDeletedShifts({});
+                    setDeletedShifts({});
+                    toast.success("Deleted shifts list cleared.");
+                  }}
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-muted/60 border-b border-border">
+                    <th className="p-2 border-r border-border text-left">Ref</th>
+                    <th className="p-2 border-r border-border text-left">Date</th>
+                    <th className="p-2 border-r border-border text-left">Service Member</th>
+                    <th className="p-2 border-r border-border text-center">Start</th>
+                    <th className="p-2 border-r border-border text-center">End</th>
+                    <th className="p-2 border-r border-border text-center">Duration</th>
+                    <th className="p-2 border-r border-border text-left">Service Call</th>
+                    <th className="p-2 border-r border-border text-left">Deleted At</th>
+                    <th className="p-2 text-center w-24">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deletedList.length === 0 && (
+                    <tr><td colSpan={9} className="p-8 text-center text-muted-foreground">No deleted shifts.</td></tr>
+                  )}
+                  {deletedList.map((d) => (
+                    <tr key={d.id} className="border-b border-border hover:bg-muted/30">
+                      <td className="p-2 border-r border-border font-mono text-[11px]">{d.ref}</td>
+                      <td className="p-2 border-r border-border font-mono text-[11px]">{d.date}</td>
+                      <td className="p-2 border-r border-border text-primary">{d.serviceUser}</td>
+                      <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.start}</td>
+                      <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.end}</td>
+                      <td className="p-2 border-r border-border text-center font-mono text-[11px]">{d.duration}</td>
+                      <td className="p-2 border-r border-border text-[11px]">{d.serviceCall ?? "—"}</td>
+                      <td className="p-2 border-r border-border font-mono text-[11px] text-muted-foreground">
+                        {new Date(d.deletedAt).toLocaleString("en-GB")}
+                      </td>
+                      <td className="p-2 text-center">
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => restoreDeleted(d.id)}>
+                          <RotateCcw className="h-3 w-3" /> Restore
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
         {/* Conflict spreadsheet */}
+        {!isDeletedView && (
         <TooltipProvider delayDuration={150}>
+
           <Card className="border border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
